@@ -1,0 +1,17 @@
+# 构建产物
+bin/
+obj/
+*.user
+*.suo
+
+# IDE / 编辑器
+.vs/
+.idea/
+.vscode/
+
+# 反编译参考源码（外部下载，不入库）
+DialogueBox.cs
+Dialogue.cs
+SpriteText.cs
+IClickableMenu.cs
+reflection-notes.txt

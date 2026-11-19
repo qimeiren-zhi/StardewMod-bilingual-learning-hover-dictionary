@@ -1,0 +1,10 @@
+{
+  "Name": "Bilingual Learning",
+  "Author": "zhiqi",
+  "Version": "0.1.0",
+  "Description": "在英文 NPC 对话中显示单词词性与中文释义，支持生词本与导出（MVP 开发中）。",
+  "UniqueID": "zhiqi.BilingualLearning",
+  "EntryDll": "BilingualLearning.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
