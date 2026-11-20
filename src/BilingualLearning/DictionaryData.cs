@@ -6,17 +6,19 @@ using StardewModdingAPI;
 namespace BilingualLearning;
 
 /// <summary>
-/// 精简英中词典（S4）。数据文件 dictionary.tsv，每行：word \t 释义 \t tag。
+/// 精简英中词典（v2）。数据文件 dictionary.tsv，每行：word \t pos \t translation \t tag。
 /// </summary>
 public class DictionaryData
 {
     public readonly struct Entry
     {
-        public readonly string Translation; // 词性 + 中文释义（首行）
-        public readonly string Tag;         // 难度标签（gk/cet4/... 空格分隔）
+        public readonly string Pos;         // 词性（n./vt./人名 等，可空）
+        public readonly string Translation; // 中文释义（收敛后 1~2 义项）
+        public readonly string Tag;         // 难度标签（gk/cet4/... 空格分隔，含 prop）
 
-        public Entry(string translation, string tag)
+        public Entry(string pos, string translation, string tag)
         {
+            this.Pos = pos;
             this.Translation = translation;
             this.Tag = tag;
         }
@@ -53,17 +55,18 @@ public class DictionaryData
                 continue;
 
             string[] parts = raw.Split('\t');
-            if (parts.Length < 2)
+            if (parts.Length < 4)
                 continue;
 
             string word = parts[0].Trim();
-            string translation = parts[1].Trim();
-            string tag = parts.Length >= 3 ? parts[2].Trim() : "";
+            string pos = parts[1].Trim();
+            string translation = parts[2].Trim();
+            string tag = parts[3].Trim();
 
-            if (word.Length == 0)
+            if (word.Length == 0 || translation.Length == 0)
                 continue;
 
-            data.entries[word] = new Entry(translation, tag);
+            data.entries[word] = new Entry(pos, translation, tag);
         }
 
         monitor.Log($"词典加载完成：{data.Count} 词条", LogLevel.Info);

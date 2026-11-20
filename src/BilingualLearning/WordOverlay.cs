@@ -90,7 +90,7 @@ public class WordOverlay
                 // S4 查词：命中新词时查词典并记录结果
                 if (this.dictionary != null && this.dictionary.TryGet(word, out var entry))
                 {
-                    this.monitor.Log($"S4 查词：'{word}' → [{entry.Tag}] {entry.Translation}", LogLevel.Info);
+                    this.monitor.Log($"S4 查词：'{word}' → [{entry.Tag}] {entry.Pos} {entry.Translation}", LogLevel.Info);
                 }
                 else
                 {
@@ -176,12 +176,18 @@ public class WordOverlay
             return;
         }
 
-        string translation = (this.dictionary != null && this.dictionary.TryGet(word, out var entry)) ? entry.Translation : "";
+        string pos = "";
+        string translation = "";
+        if (this.dictionary != null && this.dictionary.TryGet(word, out var entry))
+        {
+            pos = entry.Pos;
+            translation = entry.Translation;
+        }
         this.vocabulary?.Add(new VocabEntry
         {
             Word = word,
-            Pos = ExtractPos(translation),
-            Translation = ExtractMeaning(translation),
+            Pos = pos,
+            Translation = translation,
             Sentence = box.getCurrentString(),
             FirstSeen = new FirstSeen
             {
@@ -190,7 +196,7 @@ public class WordOverlay
                 Day = Game1.dayOfMonth
             }
         });
-        this.monitor.Log($"★ 已收藏：'{word}' → {translation}", LogLevel.Info);
+        this.monitor.Log($"★ 已收藏：'{word}' → {pos} {translation}", LogLevel.Info);
     }
 
     /// <summary>是否英文语言（F14：仅英文启用）。</summary>
@@ -247,31 +253,6 @@ public class WordOverlay
         return false;
     }
 
-    /// <summary>从「词性. 释义」中提取词性前缀，如 "n."。</summary>
-    private static string ExtractPos(string translation)
-    {
-        int dot = translation.IndexOf('.');
-        if (dot <= 0)
-        {
-            return "";
-        }
-        for (int i = 0; i < dot; i++)
-        {
-            if (!char.IsLetter(translation[i]))
-            {
-                return "";
-            }
-        }
-        return translation.Substring(0, dot + 1);
-    }
-
-    /// <summary>从「词性. 释义」中提取释义部分。</summary>
-    private static string ExtractMeaning(string translation)
-    {
-        string pos = ExtractPos(translation);
-        return pos.Length == 0 ? translation : translation.Substring(pos.Length).Trim();
-    }
-
     /// <summary>首字母大写（spring → Spring）。</summary>
     private static string Capitalize(string s)
     {
@@ -289,7 +270,9 @@ public class WordOverlay
         // 查词（S4）
         if (this.dictionary != null && this.dictionary.TryGet(word, out var entry))
         {
-            this.hoveredTranslation = entry.Translation;
+            this.hoveredTranslation = string.IsNullOrEmpty(entry.Pos)
+                ? entry.Translation
+                : $"{entry.Pos} {entry.Translation}";
         }
         else
         {
