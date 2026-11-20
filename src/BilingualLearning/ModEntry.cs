@@ -1,12 +1,13 @@
 using System;
 using HarmonyLib;
-using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
+using StardewModdingAPI.Events;
+using StardewValley;
 using StardewValley.Menus;
 
 namespace BilingualLearning;
 
-/// <summary>Mod 入口点：注册 Harmony 补丁。</summary>
+/// <summary>Mod 入口点：注册 Harmony 补丁与覆盖层绘制事件。</summary>
 public class ModEntry : Mod
 {
     private static ModEntry? instance;
@@ -40,16 +41,8 @@ public class ModEntry : Mod
             prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeClick))
         );
 
-        // S3: 气泡覆盖层绘制。挂 draw 后置，与光标同一 SpriteBatch 批次，
-        // 靠深度排序让气泡(0.98/0.99)位于对话之上、光标(1.0)之下。
-        harmony.Patch(
-            original: AccessTools.Method(
-                typeof(DialogueBox),
-                nameof(DialogueBox.draw),
-                new[] { typeof(SpriteBatch) }
-            ),
-            postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDraw))
-        );
+        // S3: 气泡覆盖层绘制。用 RenderedActiveMenu（早于光标绘制），画在此处的气泡天然被光标覆盖。
+        helper.Events.Display.RenderedActiveMenu += this.OnRenderedActiveMenu;
     }
 
     private static void AfterHover(DialogueBox __instance, int mouseX, int mouseY)
@@ -62,8 +55,11 @@ public class ModEntry : Mod
         return instance?.overlay.OnClick(__instance, x, y) ?? true;
     }
 
-    private static void AfterDraw(DialogueBox __instance, SpriteBatch b)
+    private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
     {
-        instance?.overlay.Draw(b);
+        if (Game1.activeClickableMenu is DialogueBox)
+        {
+            this.overlay.Draw(e.SpriteBatch);
+        }
     }
 }

@@ -95,7 +95,7 @@ public class WordOverlay
         return true; // 放行给游戏默认逻辑（翻页 / 跳过打字机）
     }
 
-    /// <summary>S3：绘制气泡 + 星标。图层：背景 0.98 ＜ 星标/文本 0.99 ＜ 光标 1.0。</summary>
+    /// <summary>S3：绘制气泡 + 星标。图层：背景 0.95 ＜ 星标/文本 0.96（高于对话文本 0.88；光标在独立批次，不受此影响）。</summary>
     public void Draw(SpriteBatch b)
     {
         if (this.hoveredWord == null)
@@ -115,16 +115,16 @@ public class WordOverlay
             Color.White,
             2f,
             drawShadow: false,
-            draw_layer: 0.98f
+            draw_layer: 0.95f
         );
 
-        // 星标（左，0.99，位于背景之上）：点亮=白；未点亮=深灰半透明
+        // 星标（左，0.96，位于背景之上）：点亮=白；未点亮=深灰半透明
         bool lit = this.starred.Contains(this.hoveredWord);
         Color starColor = lit ? Color.White : new Color(90, 90, 90) * 0.6f;
-        b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.99f);
+        b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.96f);
 
-        // 单词文本（右，0.99，位于背景之上；中文释义需 S1 字体，此处占位）
-        b.DrawString(Game1.smallFont, this.hoveredWord, this.textPos, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.99f);
+        // 单词文本（右，0.96，位于背景之上；中文释义需 S1 字体，此处占位）
+        b.DrawString(Game1.smallFont, this.hoveredWord, this.textPos, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.96f);
     }
 
     private void ToggleStar(string word)
