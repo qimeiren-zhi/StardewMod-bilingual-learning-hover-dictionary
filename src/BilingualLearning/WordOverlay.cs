@@ -153,7 +153,7 @@ public class WordOverlay
         // 中文释义（词性 + 释义，单行，0.96）
         if (this.hoveredTranslation != null)
         {
-            var transColor = SpriteText.color_Default;
+            var transColor = new Color(240, 240, 240);
             if (this.chineseFont != null)
             {
                 this.chineseFont.Draw(b, this.hoveredTranslation, this.transPos, transColor, 0.96f);
