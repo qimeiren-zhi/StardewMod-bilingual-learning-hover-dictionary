@@ -34,7 +34,7 @@ public class ModEntry : Mod
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
 
-        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet, this.config);
+        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -68,17 +68,6 @@ public class ModEntry : Mod
         helper.Events.GameLoop.GameLaunched += (sender, e) => this.RegisterConfigMenu(helper);
     }
 
-    private static readonly (string Tag, string Label)[] LevelOptions =
-    {
-        ("gk", "High school (gk)"),
-        ("cet4", "CET-4"),
-        ("cet6", "CET-6"),
-        ("ky", "Postgraduate (ky)"),
-        ("toefl", "TOEFL"),
-        ("ielts", "IELTS"),
-        ("gre", "GRE"),
-    };
-
     private void RegisterConfigMenu(IModHelper helper)
     {
         var api = helper.ModRegistry.GetApi<IApi>("spacechase0.GenericModConfigMenu");
@@ -99,26 +88,6 @@ public class ModEntry : Mod
         api.RegisterSimpleOption(manifest, "Toggle key", "Toggle the lookup feature on/off", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
         api.RegisterSimpleOption(manifest, "Export key", "Export the vocabulary", () => this.config.ExportKey, value => this.config.ExportKey = value);
         api.RegisterChoiceOption(manifest, "Export location", "Where to save exported files", () => this.config.ExportLocation, value => this.config.ExportLocation = value, new[] { "Documents", "Desktop", "Downloads", "Mod folder" });
-
-        foreach (var (tag, label) in LevelOptions)
-        {
-            api.RegisterSimpleOption(manifest, label, "Show words at this difficulty level", () => this.config.EnabledLevels.Contains(tag), value => this.SetLevel(tag, value));
-        }
-    }
-
-    private void SetLevel(string level, bool enabled)
-    {
-        if (enabled)
-        {
-            if (!this.config.EnabledLevels.Contains(level))
-            {
-                this.config.EnabledLevels.Add(level);
-            }
-        }
-        else
-        {
-            this.config.EnabledLevels.Remove(level);
-        }
     }
 
     private HashSet<string> LoadNpcNames(IModHelper helper)

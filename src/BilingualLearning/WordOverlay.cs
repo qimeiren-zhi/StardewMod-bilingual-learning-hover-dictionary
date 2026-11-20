@@ -20,7 +20,6 @@ public class WordOverlay
     private ChineseFont? chineseFont;
     private Vocabulary? vocabulary;
     private HashSet<string>? nameSet;
-    private ModConfig config = new();
 
     /// <summary>学习模式总开关（F11）。</summary>
     public bool Enabled = true;
@@ -37,14 +36,13 @@ public class WordOverlay
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
     private static readonly Rectangle IridiumStarSource = new(346, 392, 8, 8);
 
-    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont, Vocabulary vocabulary, HashSet<string> nameSet, ModConfig config)
+    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont, Vocabulary vocabulary, HashSet<string> nameSet)
     {
         this.monitor = monitor;
         this.dictionary = dictionary;
         this.chineseFont = chineseFont;
         this.vocabulary = vocabulary;
         this.nameSet = nameSet;
-        this.config = config;
     }
 
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
@@ -205,31 +203,6 @@ public class WordOverlay
         return LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.en;
     }
 
-    /// <summary>6.2 等级过滤：命中任一所选等级即显示；无标签视为低于阈值；专有名词（prop）恒保留。</summary>
-    private bool IsLevelMatch(string tag)
-    {
-        if (this.config.EnabledLevels == null || this.config.EnabledLevels.Count == 0)
-        {
-            return true; // 未配置等级 → 不过滤
-        }
-        if (string.IsNullOrEmpty(tag))
-        {
-            return false; // 无标签 → 低于阈值
-        }
-        foreach (string t in tag.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-        {
-            if (t == "prop")
-            {
-                return true; // 专有名词：保留，按类别显示（NPC 名已由名称过滤先行拦截）
-            }
-            if (this.config.EnabledLevels.Contains(t))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /// <summary>是否为应忽略的人物/专有名称。</summary>
     private bool IsIgnoredName(string word)
     {
@@ -379,10 +352,6 @@ public class WordOverlay
                 if (this.dictionary == null || !this.dictionary.TryGet(normalized, out var entry))
                 {
                     return false; // F13: 未收录词不显示气泡
-                }
-                if (!this.IsLevelMatch(entry.Tag))
-                {
-                    return false; // 6.2: 等级过滤（低于所选难度不显示）
                 }
                 word = normalized;
                 rect = hit.Box;
