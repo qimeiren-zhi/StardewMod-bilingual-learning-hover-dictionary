@@ -337,12 +337,6 @@ public class WordOverlay
         word = "";
         rect = Rectangle.Empty;
 
-        // F12: 仅 NPC 对话（characterDialogue != null）
-        if (box.characterDialogue == null)
-        {
-            return false;
-        }
-
         int wrapWidth = box.isPortraitBox() ? box.width - 460 - 24 : box.width;
         int originX = box.x + 8;
         int originY = box.y + 8;
