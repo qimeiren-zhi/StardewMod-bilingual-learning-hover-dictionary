@@ -14,6 +14,7 @@ public class ModEntry : Mod
     private static ModEntry? instance;
 
     private readonly WordOverlay overlay = new();
+    private Vocabulary? vocabulary;
 
     public override void Entry(IModHelper helper)
     {
@@ -22,15 +23,15 @@ public class ModEntry : Mod
         // 词典 + 中文字体 + 生词本
         var dictionary = DictionaryData.Load(helper, this.Monitor);
         var chineseFont = ChineseFont.Load(helper, this.Monitor);
-        var vocabulary = new Vocabulary(helper, this.Monitor);
+        this.vocabulary = new Vocabulary(helper, this.Monitor);
 
-        // 生词本在存档加载后才读取（ReadSaveData 需存档已加载）
-        helper.Events.GameLoop.SaveLoaded += (sender, e) => vocabulary.Load();
+        // 生词本在存档加载后才读取（需存档已加载）
+        helper.Events.GameLoop.SaveLoaded += (sender, e) => this.vocabulary?.Load();
 
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
 
-        this.overlay.Init(this.Monitor, dictionary, chineseFont, vocabulary, nameSet);
+        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -86,6 +87,18 @@ public class ModEntry : Mod
         {
             this.overlay.Enabled = !this.overlay.Enabled;
             this.Monitor.Log($"学习模式：{(this.overlay.Enabled ? "开启" : "关闭")}", LogLevel.Info);
+        }
+        else if (e.Button == SButton.F9)
+        {
+            // F9: 导出生词本
+            if (this.vocabulary != null && this.vocabulary.Words.Count > 0)
+            {
+                Exporter.Export(this.vocabulary.Words, this.Helper.DirectoryPath, this.Monitor);
+            }
+            else
+            {
+                this.Monitor.Log("生词本为空，无需导出", LogLevel.Info);
+            }
         }
     }
 

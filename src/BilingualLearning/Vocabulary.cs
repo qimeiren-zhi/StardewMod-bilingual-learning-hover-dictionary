@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using StardewModdingAPI;
@@ -19,6 +20,8 @@ public class Vocabulary
     }
 
     public int Count => this.data.Words.Count;
+
+    public IReadOnlyList<VocabEntry> Words => this.data.Words;
 
     public void Load()
     {
