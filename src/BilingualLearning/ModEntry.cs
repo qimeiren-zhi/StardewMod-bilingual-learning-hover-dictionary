@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GenericModConfigMenu;
 using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -60,8 +61,61 @@ public class ModEntry : Mod
         // S3: 气泡覆盖层绘制
         helper.Events.Display.RenderedActiveMenu += this.OnRenderedActiveMenu;
 
-        // F11: 学习模式总开关
+        // F11/F9 快捷键
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
+
+        // GMCM 配置菜单（可选前置）
+        this.RegisterConfigMenu(helper);
+    }
+
+    private static readonly (string Tag, string Label)[] LevelOptions =
+    {
+        ("gk", "高中（高考）"),
+        ("cet4", "四级"),
+        ("cet6", "六级"),
+        ("ky", "考研"),
+        ("toefl", "托福"),
+        ("ielts", "雅思"),
+        ("gre", "GRE"),
+    };
+
+    private void RegisterConfigMenu(IModHelper helper)
+    {
+        var api = helper.ModRegistry.GetApi<IApi>("spacechase0.GenericModConfigMenu");
+        if (api == null)
+        {
+            return; // 未安装 GMCM
+        }
+
+        var manifest = this.ModManifest;
+        api.RegisterModConfig(
+            manifest,
+            () => this.config = new ModConfig(),
+            () => helper.WriteConfig(this.config)
+        );
+
+        api.RegisterSimpleOption(manifest, "开关快捷键", "一键开/关查词", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
+        api.RegisterSimpleOption(manifest, "导出快捷键", "导出生词本", () => this.config.ExportKey, value => this.config.ExportKey = value);
+
+        foreach (var (tag, label) in LevelOptions)
+        {
+            api.RegisterSimpleOption(manifest, label, "显示该难度等级的单词", () => this.config.EnabledLevels.Contains(tag), value => this.SetLevel(tag, value));
+        }
+    }
+
+    private void SetLevel(string level, bool enabled)
+    {
+        if (enabled)
+        {
+            if (!this.config.EnabledLevels.Contains(level))
+            {
+                this.config.EnabledLevels.Add(level);
+            }
+        }
+        else
+        {
+            this.config.EnabledLevels.Remove(level);
+        }
     }
 
     private HashSet<string> LoadNpcNames(IModHelper helper)
