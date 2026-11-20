@@ -23,7 +23,9 @@ public class ModEntry : Mod
         var dictionary = DictionaryData.Load(helper, this.Monitor);
         var chineseFont = ChineseFont.Load(helper, this.Monitor);
         var vocabulary = new Vocabulary(helper, this.Monitor);
-        vocabulary.Load();
+
+        // 生词本在存档加载后才读取（ReadSaveData 需存档已加载）
+        helper.Events.GameLoop.SaveLoaded += (sender, e) => vocabulary.Load();
 
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
