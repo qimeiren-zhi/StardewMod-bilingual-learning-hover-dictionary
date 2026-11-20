@@ -54,8 +54,8 @@ public class WordOverlay
             return;
         }
 
-        // 生命周期/门槛 1：转场中或问题对话框 → 清空，防止旧气泡穿透到下一个对话
-        if (box.transitioning || box.isQuestion)
+        // 生命周期/门槛 1：转场中 → 清空，防止旧气泡穿透到下一个对话
+        if (box.transitioning)
         {
             this.hoveredWord = null;
             return;
@@ -337,9 +337,21 @@ public class WordOverlay
         word = "";
         rect = Rectangle.Empty;
 
-        int wrapWidth = box.isPortraitBox() ? box.width - 460 - 24 : box.width;
+        int wrapWidth;
         int originX = box.x + 8;
-        int originY = box.y + 8;
+        int originY;
+
+        if (box.isQuestion)
+        {
+            // 问题对话框：提示文本在 (x+8, y+12-(heightForQuestions-height))，换行宽 width-16
+            wrapWidth = box.width - 16;
+            originY = box.y + 12 - (box.heightForQuestions - box.height);
+        }
+        else
+        {
+            wrapWidth = box.isPortraitBox() ? box.width - 460 - 24 : box.width;
+            originY = box.y + 8;
+        }
 
         foreach (var hit in BuildWordHits(text, originX, originY, wrapWidth))
         {
