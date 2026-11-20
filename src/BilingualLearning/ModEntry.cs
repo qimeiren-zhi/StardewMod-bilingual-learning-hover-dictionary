@@ -18,7 +18,8 @@ public class ModEntry : Mod
     {
         instance = this;
         var dictionary = DictionaryData.Load(helper, this.Monitor);
-        this.overlay.Init(this.Monitor, dictionary);
+        var chineseFont = ChineseFont.Load(helper, this.Monitor);
+        this.overlay.Init(this.Monitor, dictionary, chineseFont);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
