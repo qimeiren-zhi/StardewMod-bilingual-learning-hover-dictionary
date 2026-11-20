@@ -5,6 +5,7 @@ using HarmonyLib;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.BellsAndWhistles;
 using StardewValley.Menus;
 
 namespace BilingualLearning;
@@ -25,7 +26,7 @@ public class ModEntry : Mod
         // 配置 + 词典 + 中文字体 + 生词本
         this.config = helper.ReadConfig<ModConfig>();
         var dictionary = DictionaryData.Load(helper, this.Monitor);
-        var chineseFont = ChineseFont.Load(helper, this.Monitor);
+        var chineseFont = ChineseFont.Load(helper, this.Monitor, 16f * SpriteText.FontPixelZoom);
         this.vocabulary = new Vocabulary(helper, this.Monitor);
 
         // 生词本在存档加载后才读取（需存档已加载）
