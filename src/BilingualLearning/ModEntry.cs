@@ -64,8 +64,8 @@ public class ModEntry : Mod
         // F11/F9 快捷键
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
 
-        // GMCM 配置菜单（可选前置）
-        this.RegisterConfigMenu(helper);
+        // GMCM 配置菜单（可选前置）：在 GameLaunched（所有 mod 初始化完成后）再注册
+        helper.Events.GameLoop.GameLaunched += (sender, e) => this.RegisterConfigMenu(helper);
     }
 
     private static readonly (string Tag, string Label)[] LevelOptions =
