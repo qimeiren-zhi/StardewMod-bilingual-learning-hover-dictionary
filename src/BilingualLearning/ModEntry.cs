@@ -70,12 +70,12 @@ public class ModEntry : Mod
 
     private static readonly (string Tag, string Label)[] LevelOptions =
     {
-        ("gk", "高中（高考）"),
-        ("cet4", "四级"),
-        ("cet6", "六级"),
-        ("ky", "考研"),
-        ("toefl", "托福"),
-        ("ielts", "雅思"),
+        ("gk", "High school (gk)"),
+        ("cet4", "CET-4"),
+        ("cet6", "CET-6"),
+        ("ky", "Postgraduate (ky)"),
+        ("toefl", "TOEFL"),
+        ("ielts", "IELTS"),
         ("gre", "GRE"),
     };
 
@@ -94,12 +94,14 @@ public class ModEntry : Mod
             () => helper.WriteConfig(this.config)
         );
 
-        api.RegisterSimpleOption(manifest, "开关快捷键", "一键开/关查词", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
-        api.RegisterSimpleOption(manifest, "导出快捷键", "导出生词本", () => this.config.ExportKey, value => this.config.ExportKey = value);
+        api.SetDefaultIngameOptinValue(manifest, true);
+
+        api.RegisterSimpleOption(manifest, "Toggle key", "Toggle the lookup feature on/off", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
+        api.RegisterSimpleOption(manifest, "Export key", "Export the vocabulary", () => this.config.ExportKey, value => this.config.ExportKey = value);
 
         foreach (var (tag, label) in LevelOptions)
         {
-            api.RegisterSimpleOption(manifest, label, "显示该难度等级的单词", () => this.config.EnabledLevels.Contains(tag), value => this.SetLevel(tag, value));
+            api.RegisterSimpleOption(manifest, label, "Show words at this difficulty level", () => this.config.EnabledLevels.Contains(tag), value => this.SetLevel(tag, value));
         }
     }
 
