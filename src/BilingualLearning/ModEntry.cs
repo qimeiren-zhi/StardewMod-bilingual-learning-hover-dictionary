@@ -57,9 +57,14 @@ public class ModEntry : Mod
 
     private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
     {
-        if (Game1.activeClickableMenu is DialogueBox)
+        if (Game1.activeClickableMenu is DialogueBox box)
         {
             this.overlay.Draw(e.SpriteBatch);
+
+            // 气泡画完后重绘菜单光标（layer 1.0），确保光标浮在气泡之上。
+            // 因为 RenderedActiveMenu 触发于 DialogueBox.draw（末尾已画过 drawMouse）之后，
+            // 气泡会盖住那个光标，故需在气泡之后重画一次。
+            box.drawMouse(e.SpriteBatch);
         }
     }
 }
