@@ -11,12 +11,11 @@ namespace BilingualLearning;
 
 /// <summary>
 /// P2 技术 Spike：S2 对话单词命中 + S3 九宫格气泡与铱星星标。
-///
-/// 说明：本文件是可运行原型。释义/词性为占位（词典接入见 S4，中文 TTF 渲染见 S1），
-/// 隐藏延迟与 GMCM 配置等留待 P3/P5。
 /// </summary>
 public class WordOverlay
 {
+    private const double HideDelayMs = 1500.0; // 3.3 延迟隐藏（默认 1.5s）
+
     private IMonitor monitor = null!;
 
     // —— 覆盖层状态 ——
@@ -24,6 +23,8 @@ public class WordOverlay
     private Rectangle wordBox;
     private Rectangle bubbleBox;
     private Rectangle starBox;
+    private Vector2 textPos;
+    private double hideAtTime; // >0 表示正在倒计时延迟隐藏
     private readonly HashSet<string> starred = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
@@ -37,25 +38,42 @@ public class WordOverlay
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
     public void OnHover(DialogueBox box, int mouseX, int mouseY)
     {
+        // 1. 鼠标仍在当前单词或气泡上 → 保持显示（优先于命中，解决气泡覆盖下一行时的跳词）
+        if (this.hoveredWord != null && (this.wordBox.Contains(mouseX, mouseY) || this.bubbleBox.Contains(mouseX, mouseY)))
+        {
+            this.hideAtTime = 0;
+            return;
+        }
+
+        // 2. 命中新单词 → 切换
         if (TryHitWord(box, mouseX, mouseY, out string word, out Rectangle rect))
         {
             if (word != this.hoveredWord)
             {
-                this.hoveredWord = word;
                 this.monitor.Log($"S2 命中单词：'{word}' @ {rect}", LogLevel.Info);
             }
+            this.hoveredWord = word;
             this.wordBox = rect;
             this.ComputeBubbleLayout();
+            this.hideAtTime = 0;
             return;
         }
 
-        // 鼠标不在单词上：若仍在气泡区域内，则保持显示（以便点击星标）
-        if (this.hoveredWord != null && this.bubbleBox.Contains(mouseX, mouseY))
+        // 3. 既不在单词也不在气泡 → 延迟隐藏
+        if (this.hoveredWord == null)
         {
             return;
         }
-
-        this.hoveredWord = null; // 离开单词与气泡 → 隐藏（延迟隐藏留待 P3）
+        double now = Game1.currentGameTime.TotalGameTime.TotalMilliseconds;
+        if (this.hideAtTime <= 0)
+        {
+            this.hideAtTime = now + HideDelayMs;
+        }
+        else if (now >= this.hideAtTime)
+        {
+            this.hoveredWord = null;
+            this.hideAtTime = 0;
+        }
     }
 
     /// <summary>S3：点击分层。返回 false 表示吞掉本次点击（不翻页）。</summary>
@@ -75,8 +93,8 @@ public class WordOverlay
         return true; // 放行给游戏默认逻辑（翻页 / 跳过打字机）
     }
 
-    /// <summary>S3：绘制气泡 + 星标（覆盖层，画在 DialogueBox 之上）。</summary>
-    public void Draw(SpriteBatch b, DialogueBox box)
+    /// <summary>S3：绘制气泡 + 星标。图层：背景 0.98 ＜ 星标/文本 0.99 ＜ 光标 1.0。</summary>
+    public void Draw(SpriteBatch b)
     {
         if (this.hoveredWord == null)
         {
@@ -95,17 +113,16 @@ public class WordOverlay
             Color.White,
             2f,
             drawShadow: false,
-            draw_layer: 0.99f
+            draw_layer: 0.98f
         );
 
-        // 单词文本（英文；中文释义需 S1 字体，此处占位）
-        var textPos = new Vector2(this.bubbleBox.X + 10, this.bubbleBox.Y + 8);
-        b.DrawString(Game1.smallFont, this.hoveredWord, textPos, Color.White);
-
-        // 星标：点亮 = 白；未点亮 = 深灰半透明（3.6 描边留待 P3 细化）
+        // 星标（左，0.99，位于背景之上）：点亮=白；未点亮=深灰半透明
         bool lit = this.starred.Contains(this.hoveredWord);
         Color starColor = lit ? Color.White : new Color(90, 90, 90) * 0.6f;
-        b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor);
+        b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.99f);
+
+        // 单词文本（右，0.99，位于背景之上；中文释义需 S1 字体，此处占位）
+        b.DrawString(Game1.smallFont, this.hoveredWord, this.textPos, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.99f);
     }
 
     private void ToggleStar(string word)
@@ -134,7 +151,7 @@ public class WordOverlay
         int height = Math.Max((int)textSize.Y, starSize) + padding * 2;
 
         int x = this.wordBox.X;
-        int y = this.wordBox.Bottom + 4;
+        int y = this.wordBox.Bottom + 4; // 保留 4px 视觉空隙（透明命中区留待后续）
 
         // 防止超出 UI 视口
         if (x + width > Game1.uiViewport.Width)
@@ -147,11 +164,17 @@ public class WordOverlay
         }
 
         this.bubbleBox = new Rectangle(x, y, width, height);
+
+        // 星标在左，文本在右
         this.starBox = new Rectangle(
-            x + width - starSize - padding,
+            x + padding,
             y + (height - starSize) / 2,
             starSize,
             starSize
+        );
+        this.textPos = new Vector2(
+            x + padding + starSize + gap,
+            y + (height - textSize.Y) / 2
         );
     }
 
@@ -172,7 +195,7 @@ public class WordOverlay
             return false;
         }
 
-        // 打字机门槛：文字完全显示后才查词（与游戏 performHoverAction 的门槛一致）
+        // 打字机门槛：文字完全显示后才查词
         if (box.characterIndexInDialogue < text.Length - 1)
         {
             return false;
@@ -223,8 +246,8 @@ public class WordOverlay
     }
 
     /// <summary>
-    /// 逐字符复刻 SpriteText.drawString（拉丁分支，见反编译源码 648-695 行）：
-    /// 推进 = 8*zoom + offset(当前) + offset(下一个)；换行判定用 positionOfNextSpace。
+    /// 逐字符复刻 SpriteText.drawString（拉丁分支）：推进 = 8*zoom + offset(当前) + offset(下一个)；
+    /// 换行判定用 positionOfNextSpace。
     /// </summary>
     private static List<WordHit> BuildWordHits(string s, int originX, int originY, int wrapWidth)
     {
