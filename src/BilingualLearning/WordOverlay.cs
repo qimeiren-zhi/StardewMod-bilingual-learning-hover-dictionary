@@ -186,7 +186,7 @@ public class WordOverlay
             Word = word,
             Pos = pos,
             Translation = translation,
-            Sentence = box.getCurrentString(),
+            Sentence = CleanSentence(box.getCurrentString()),
             FirstSeen = new FirstSeen
             {
                 Year = Game1.year,
@@ -228,6 +228,12 @@ public class WordOverlay
             }
         }
         return false;
+    }
+
+    /// <summary>清理游戏对话标记（^ 换行、^^ 分页）。</summary>
+    private static string CleanSentence(string s)
+    {
+        return s.Replace("^^", " ").Replace("^", " ").Trim();
     }
 
     /// <summary>首字母大写（spring → Spring）。</summary>
