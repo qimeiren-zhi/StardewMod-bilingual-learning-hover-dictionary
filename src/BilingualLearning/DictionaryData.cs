@@ -31,6 +31,11 @@ public class DictionaryData
         return this.entries.TryGetValue(word, out entry);
     }
 
+    public bool Contains(string word)
+    {
+        return this.entries.ContainsKey(word);
+    }
+
     public static DictionaryData Load(IModHelper helper, IMonitor monitor)
     {
         var data = new DictionaryData();

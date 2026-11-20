@@ -337,6 +337,12 @@ public class WordOverlay
         word = "";
         rect = Rectangle.Empty;
 
+        // F12: 仅 NPC 对话（characterDialogue != null）
+        if (box.characterDialogue == null)
+        {
+            return false;
+        }
+
         int wrapWidth = box.isPortraitBox() ? box.width - 460 - 24 : box.width;
         int originX = box.x + 8;
         int originY = box.y + 8;
@@ -353,6 +359,10 @@ public class WordOverlay
                 if (this.IsIgnoredName(normalized))
                 {
                     return false; // 人物/专有名称，不显示释义
+                }
+                if (this.dictionary == null || !this.dictionary.Contains(normalized))
+                {
+                    return false; // F13: 未收录词不显示气泡
                 }
                 word = normalized;
                 rect = hit.Box;
