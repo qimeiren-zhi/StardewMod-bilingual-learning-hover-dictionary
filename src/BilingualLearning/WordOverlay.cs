@@ -18,6 +18,11 @@ public class WordOverlay
     private IMonitor monitor = null!;
     private DictionaryData? dictionary;
     private ChineseFont? chineseFont;
+    private Vocabulary? vocabulary;
+    private HashSet<string>? nameSet;
+
+    /// <summary>学习模式总开关（F11）。</summary>
+    public bool Enabled = true;
 
     // —— 覆盖层状态 ——
     private string? hoveredWord;
@@ -27,21 +32,28 @@ public class WordOverlay
     private Rectangle starBox;
     private Rectangle bridgeRect; // 命中判定用，不绘制
     private Vector2 transPos;
-    private readonly HashSet<string> starred = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
     private static readonly Rectangle IridiumStarSource = new(346, 392, 8, 8);
 
-    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont)
+    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont, Vocabulary vocabulary, HashSet<string> nameSet)
     {
         this.monitor = monitor;
         this.dictionary = dictionary;
         this.chineseFont = chineseFont;
+        this.vocabulary = vocabulary;
+        this.nameSet = nameSet;
     }
 
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
     public void OnHover(DialogueBox box, int mouseX, int mouseY)
     {
+        if (!this.Enabled || !IsEnglish())
+        {
+            this.hoveredWord = null;
+            return;
+        }
+
         // 生命周期/门槛 1：转场中或问题对话框 → 清空，防止旧气泡穿透到下一个对话
         if (box.transitioning || box.isQuestion)
         {
@@ -96,14 +108,14 @@ public class WordOverlay
     /// <summary>S3：点击分层。返回 false 表示吞掉本次点击（不翻页）。</summary>
     public bool OnClick(DialogueBox box, int x, int y)
     {
-        if (this.hoveredWord == null)
+        if (!this.Enabled || !IsEnglish() || this.hoveredWord == null)
         {
             return true;
         }
 
         if (this.starBox.Contains(x, y))
         {
-            this.ToggleStar(this.hoveredWord);
+            this.ToggleStar(box, this.hoveredWord);
             return false; // 吞掉点击
         }
 
@@ -113,7 +125,7 @@ public class WordOverlay
     /// <summary>S3/S1：绘制气泡 + 星标 + 中文释义（单行）。图层：背景 0.95 ＜ 星标/文本 0.96。</summary>
     public void Draw(SpriteBatch b)
     {
-        if (this.hoveredWord == null)
+        if (!this.Enabled || !IsEnglish() || this.hoveredWord == null)
         {
             return;
         }
@@ -134,7 +146,7 @@ public class WordOverlay
         );
 
         // 星标（左，0.96，位于背景之上）：点亮=白；未点亮=深灰半透明
-        bool lit = this.starred.Contains(this.hoveredWord);
+        bool lit = this.vocabulary?.Contains(this.hoveredWord) ?? false;
         Color starColor = lit ? Color.White : new Color(90, 90, 90) * 0.6f;
         b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.96f);
 
@@ -153,17 +165,98 @@ public class WordOverlay
         }
     }
 
-    private void ToggleStar(string word)
+    private void ToggleStar(DialogueBox box, string word)
     {
-        if (this.starred.Add(word))
+        if (this.vocabulary != null && this.vocabulary.Contains(word))
         {
-            this.monitor.Log($"★ 已收藏：'{word}'", LogLevel.Info);
-        }
-        else
-        {
-            this.starred.Remove(word);
+            this.vocabulary.Remove(word);
             this.monitor.Log($"☆ 已取消收藏：'{word}'", LogLevel.Info);
+            return;
         }
+
+        string translation = (this.dictionary != null && this.dictionary.TryGet(word, out var entry)) ? entry.Translation : "";
+        this.vocabulary?.Add(new VocabEntry
+        {
+            Word = word,
+            Pos = ExtractPos(translation),
+            Translation = ExtractMeaning(translation),
+            Sentence = box.getCurrentString(),
+            FirstSeen = new FirstSeen
+            {
+                Year = Game1.year,
+                Season = Capitalize(Game1.currentSeason),
+                Day = Game1.dayOfMonth
+            }
+        });
+        this.monitor.Log($"★ 已收藏：'{word}' → {translation}", LogLevel.Info);
+    }
+
+    /// <summary>是否英文语言（F14：仅英文启用）。</summary>
+    private static bool IsEnglish()
+    {
+        return LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.en;
+    }
+
+    /// <summary>是否为应忽略的人物/专有名称。</summary>
+    private bool IsIgnoredName(string word)
+    {
+        if (this.nameSet != null && this.nameSet.Contains(word))
+        {
+            return true;
+        }
+
+        var player = Game1.player;
+        if (player != null)
+        {
+            if (string.Equals(word, player.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            if (string.Equals(word, player.farmName.Value, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            if (string.Equals(word, player.getPetDisplayName(), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>从「词性. 释义」中提取词性前缀，如 "n."。</summary>
+    private static string ExtractPos(string translation)
+    {
+        int dot = translation.IndexOf('.');
+        if (dot <= 0)
+        {
+            return "";
+        }
+        for (int i = 0; i < dot; i++)
+        {
+            if (!char.IsLetter(translation[i]))
+            {
+                return "";
+            }
+        }
+        return translation.Substring(0, dot + 1);
+    }
+
+    /// <summary>从「词性. 释义」中提取释义部分。</summary>
+    private static string ExtractMeaning(string translation)
+    {
+        string pos = ExtractPos(translation);
+        return pos.Length == 0 ? translation : translation.Substring(pos.Length).Trim();
+    }
+
+    /// <summary>首字母大写（spring → Spring）。</summary>
+    private static string Capitalize(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return s;
+        }
+        return char.ToUpper(s[0]) + s.Substring(1);
     }
 
     private void ComputeBubbleLayout()
@@ -239,7 +332,7 @@ public class WordOverlay
     }
 
     /// <summary>核心命中检测：复刻 SpriteText.drawString 的英文布局，逐字符计算单词包围盒。</summary>
-    private static bool TryHitWord(DialogueBox box, string text, int mouseX, int mouseY, out string word, out Rectangle rect)
+    private bool TryHitWord(DialogueBox box, string text, int mouseX, int mouseY, out string word, out Rectangle rect)
     {
         word = "";
         rect = Rectangle.Empty;
@@ -256,6 +349,10 @@ public class WordOverlay
                 if (normalized.Length == 0)
                 {
                     return false; // 全标点，非单词
+                }
+                if (this.IsIgnoredName(normalized))
+                {
+                    return false; // 人物/专有名称，不显示释义
                 }
                 word = normalized;
                 rect = hit.Box;
