@@ -15,12 +15,14 @@ public class ModEntry : Mod
 
     private readonly WordOverlay overlay = new();
     private Vocabulary? vocabulary;
+    private ModConfig config = new();
 
     public override void Entry(IModHelper helper)
     {
         instance = this;
 
-        // 词典 + 中文字体 + 生词本
+        // 配置 + 词典 + 中文字体 + 生词本
+        this.config = helper.ReadConfig<ModConfig>();
         var dictionary = DictionaryData.Load(helper, this.Monitor);
         var chineseFont = ChineseFont.Load(helper, this.Monitor);
         this.vocabulary = new Vocabulary(helper, this.Monitor);
@@ -31,7 +33,7 @@ public class ModEntry : Mod
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
 
-        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet);
+        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet, this.config);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -83,14 +85,14 @@ public class ModEntry : Mod
 
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs e)
     {
-        if (e.Button == SButton.F11)
+        if (e.Button == this.config.ToggleKey)
         {
             this.overlay.Enabled = !this.overlay.Enabled;
             this.Monitor.Log($"学习模式：{(this.overlay.Enabled ? "开启" : "关闭")}", LogLevel.Info);
         }
-        else if (e.Button == SButton.F9)
+        else if (e.Button == this.config.ExportKey)
         {
-            // F9: 导出生词本
+            // 导出生词本
             if (this.vocabulary != null && this.vocabulary.Words.Count > 0)
             {
                 Exporter.Export(this.vocabulary.Words, this.Helper.DirectoryPath, this.Monitor);
