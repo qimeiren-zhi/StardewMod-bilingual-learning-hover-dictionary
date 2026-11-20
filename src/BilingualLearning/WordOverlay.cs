@@ -11,11 +11,10 @@ namespace BilingualLearning;
 
 /// <summary>
 /// P2 技术 Spike：S2 对话单词命中 + S3 九宫格气泡与铱星星标。
+/// 命中判定与视觉绘制分离：桥接矩形（BridgeRect）仅参与命中判定，不绘制。
 /// </summary>
 public class WordOverlay
 {
-    private const double HideDelayMs = 1500.0; // 3.3 延迟隐藏（默认 1.5s）
-
     private IMonitor monitor = null!;
 
     // —— 覆盖层状态 ——
@@ -23,8 +22,8 @@ public class WordOverlay
     private Rectangle wordBox;
     private Rectangle bubbleBox;
     private Rectangle starBox;
+    private Rectangle bridgeRect; // 命中判定用，不绘制
     private Vector2 textPos;
-    private double hideAtTime; // >0 表示正在倒计时延迟隐藏
     private readonly HashSet<string> starred = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
@@ -38,15 +37,32 @@ public class WordOverlay
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
     public void OnHover(DialogueBox box, int mouseX, int mouseY)
     {
-        // 1. 鼠标仍在当前单词或气泡上 → 保持显示（优先于命中，解决气泡覆盖下一行时的跳词）
-        if (this.hoveredWord != null && (this.wordBox.Contains(mouseX, mouseY) || this.bubbleBox.Contains(mouseX, mouseY)))
+        // 生命周期/门槛 1：转场中或问题对话框 → 清空，防止旧气泡穿透到下一个对话
+        if (box.transitioning || box.isQuestion)
         {
-            this.hideAtTime = 0;
+            this.hoveredWord = null;
             return;
         }
 
-        // 2. 命中新单词 → 切换
-        if (TryHitWord(box, mouseX, mouseY, out string word, out Rectangle rect))
+        // 生命周期/门槛 2：打字机未完成（新对话/新页开头 characterIndexInDialogue 归零）→ 清空，防残留
+        string text = box.getCurrentString();
+        if (string.IsNullOrEmpty(text) || box.characterIndexInDialogue < text.Length - 1)
+        {
+            this.hoveredWord = null;
+            return;
+        }
+
+        // 连通判定：当前单词 ∪ 气泡 ∪ 桥接矩形 → 保持显示（优先于命中，解决气泡覆盖下一行时的跳词）
+        if (this.hoveredWord != null &&
+            (this.wordBox.Contains(mouseX, mouseY) ||
+             this.bubbleBox.Contains(mouseX, mouseY) ||
+             this.bridgeRect.Contains(mouseX, mouseY)))
+        {
+            return;
+        }
+
+        // 命中新单词
+        if (TryHitWord(box, text, mouseX, mouseY, out string word, out Rectangle rect))
         {
             if (word != this.hoveredWord)
             {
@@ -55,25 +71,11 @@ public class WordOverlay
             this.hoveredWord = word;
             this.wordBox = rect;
             this.ComputeBubbleLayout();
-            this.hideAtTime = 0;
             return;
         }
 
-        // 3. 既不在单词也不在气泡 → 延迟隐藏
-        if (this.hoveredWord == null)
-        {
-            return;
-        }
-        double now = Game1.currentGameTime.TotalGameTime.TotalMilliseconds;
-        if (this.hideAtTime <= 0)
-        {
-            this.hideAtTime = now + HideDelayMs;
-        }
-        else if (now >= this.hideAtTime)
-        {
-            this.hoveredWord = null;
-            this.hideAtTime = 0;
-        }
+        // 离开连通区域且未命中新词 → 立即隐藏（零延迟）
+        this.hoveredWord = null;
     }
 
     /// <summary>S3：点击分层。返回 false 表示吞掉本次点击（不翻页）。</summary>
@@ -151,7 +153,7 @@ public class WordOverlay
         int height = Math.Max((int)textSize.Y, starSize) + padding * 2;
 
         int x = this.wordBox.X;
-        int y = this.wordBox.Bottom + 4; // 保留 4px 视觉空隙（透明命中区留待后续）
+        int y = this.wordBox.Bottom + 4; // 保留 4px 视觉空隙
 
         // 防止超出 UI 视口
         if (x + width > Game1.uiViewport.Width)
@@ -176,30 +178,22 @@ public class WordOverlay
             x + padding + starSize + gap,
             y + (height - textSize.Y) / 2
         );
+
+        // 桥接矩形：覆盖单词底部到气泡顶部之间的间隙（仅命中判定，不绘制）
+        int bridgeLeft = Math.Max(this.wordBox.X, this.bubbleBox.X);
+        int bridgeRight = Math.Min(this.wordBox.Right, this.bubbleBox.Right);
+        int bridgeWidth = bridgeRight - bridgeLeft;
+        int bridgeHeight = this.bubbleBox.Top - this.wordBox.Bottom;
+        this.bridgeRect = (bridgeWidth > 0 && bridgeHeight > 0)
+            ? new Rectangle(bridgeLeft, this.wordBox.Bottom, bridgeWidth, bridgeHeight)
+            : Rectangle.Empty;
     }
 
     /// <summary>核心命中检测：复刻 SpriteText.drawString 的英文布局，逐字符计算单词包围盒。</summary>
-    private static bool TryHitWord(DialogueBox box, int mouseX, int mouseY, out string word, out Rectangle rect)
+    private static bool TryHitWord(DialogueBox box, string text, int mouseX, int mouseY, out string word, out Rectangle rect)
     {
         word = "";
         rect = Rectangle.Empty;
-
-        if (box.transitioning || box.isQuestion)
-        {
-            return false;
-        }
-
-        string text = box.getCurrentString();
-        if (string.IsNullOrEmpty(text))
-        {
-            return false;
-        }
-
-        // 打字机门槛：文字完全显示后才查词
-        if (box.characterIndexInDialogue < text.Length - 1)
-        {
-            return false;
-        }
 
         int wrapWidth = box.isPortraitBox() ? box.width - 460 - 24 : box.width;
         int originX = box.x + 8;
