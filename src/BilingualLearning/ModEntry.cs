@@ -66,7 +66,7 @@ public class ModEntry : Mod
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var characters = helper.GameContent.Load<Dictionary<string, string>>("Data/Characters");
+            var characters = helper.GameContent.Load<Dictionary<string, string>>("Data/NPCGiftTastes");
             foreach (string name in characters.Keys)
             {
                 set.Add(name);

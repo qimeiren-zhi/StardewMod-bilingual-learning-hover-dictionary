@@ -1,10 +1,11 @@
 using System;
+using System.IO;
 using System.Linq;
 using StardewModdingAPI;
 
 namespace BilingualLearning;
 
-/// <summary>生词本管理器：按存档隔离读写（F15），记录单词/词性/释义/原句/时间（F8）。</summary>
+/// <summary>生词本管理器：按存档隔离、立即落盘（F15/F6/F8）。</summary>
 public class Vocabulary
 {
     private readonly IModHelper helper;
@@ -21,7 +22,7 @@ public class Vocabulary
 
     public void Load()
     {
-        this.data = this.helper.Data.ReadSaveData<VocabularyData>("vocabulary") ?? new VocabularyData();
+        this.data = this.helper.Data.ReadJsonFile<VocabularyData>(this.GetSavePath()) ?? new VocabularyData();
         this.monitor.Log($"生词本加载完成：{this.data.Words.Count} 词", LogLevel.Info);
     }
 
@@ -33,8 +34,9 @@ public class Vocabulary
     public void Add(VocabEntry entry)
     {
         if (this.Contains(entry.Word))
+        {
             return;
-
+        }
         this.data.Words.Add(entry);
         this.Save();
     }
@@ -43,11 +45,19 @@ public class Vocabulary
     {
         int removed = this.data.Words.RemoveAll(w => string.Equals(w.Word, word, StringComparison.OrdinalIgnoreCase));
         if (removed > 0)
+        {
             this.Save();
+        }
     }
 
     private void Save()
     {
-        this.helper.Data.WriteSaveData("vocabulary", this.data);
+        this.helper.Data.WriteJsonFile(this.GetSavePath(), this.data);
+    }
+
+    /// <summary>按存档隔离的词典文件路径（独立文件、立即落盘，不随游戏存档周期）。</summary>
+    private string GetSavePath()
+    {
+        return $"data/{Constants.SaveFolderName}.json";
     }
 }
