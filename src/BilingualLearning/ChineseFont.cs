@@ -16,7 +16,7 @@ public class ChineseFont
         this.font = font;
     }
 
-    public static ChineseFont? Load(IModHelper helper, IMonitor monitor, float size = 18f)
+    public static ChineseFont? Load(IModHelper helper, IMonitor monitor, float size = 22f)
     {
         string path = Path.Combine(helper.DirectoryPath, "assets", "Font.ttf");
 

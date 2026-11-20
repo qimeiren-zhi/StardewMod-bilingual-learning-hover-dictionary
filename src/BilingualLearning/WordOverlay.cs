@@ -26,7 +26,6 @@ public class WordOverlay
     private Rectangle bubbleBox;
     private Rectangle starBox;
     private Rectangle bridgeRect; // 命中判定用，不绘制
-    private Vector2 wordPos;
     private Vector2 transPos;
     private readonly HashSet<string> starred = new(StringComparer.OrdinalIgnoreCase);
 
@@ -111,7 +110,7 @@ public class WordOverlay
         return true; // 放行给游戏默认逻辑（翻页 / 跳过打字机）
     }
 
-    /// <summary>S3/S1：绘制气泡 + 星标 + 单词 + 中文释义。图层：背景 0.95 ＜ 星标/文本 0.96。</summary>
+    /// <summary>S3/S1：绘制气泡 + 星标 + 中文释义（单行）。图层：背景 0.95 ＜ 星标/文本 0.96。</summary>
     public void Draw(SpriteBatch b)
     {
         if (this.hoveredWord == null)
@@ -139,10 +138,7 @@ public class WordOverlay
         Color starColor = lit ? Color.White : new Color(90, 90, 90) * 0.6f;
         b.Draw(Game1.mouseCursors, this.starBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.96f);
 
-        // 单词文本（英文，0.96）
-        b.DrawString(Game1.smallFont, this.hoveredWord, this.wordPos, Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.96f);
-
-        // 中文释义（词性 + 释义，0.96）
+        // 中文释义（词性 + 释义，单行，0.96）
         if (this.hoveredTranslation != null)
         {
             var transColor = new Color(240, 240, 240);
@@ -184,7 +180,6 @@ public class WordOverlay
             this.hoveredTranslation = "未收录";
         }
 
-        var wordSize = Game1.smallFont.MeasureString(word);
         var transSize = (this.chineseFont != null)
             ? this.chineseFont.Measure(this.hoveredTranslation)
             : Game1.smallFont.MeasureString(this.hoveredTranslation);
@@ -192,13 +187,9 @@ public class WordOverlay
         int padding = 8;
         int starSize = 24;
         int gap = 10;
-        int lineGap = 4;
 
-        int textWidth = (int)Math.Max(wordSize.X, transSize.X);
-        int textHeight = (int)wordSize.Y + lineGap + (int)transSize.Y;
-
-        int width = textWidth + gap + starSize + padding * 2;
-        int height = Math.Max(textHeight, starSize) + padding * 2;
+        int width = (int)transSize.X + gap + starSize + padding * 2;
+        int height = Math.Max((int)transSize.Y, starSize) + padding * 2;
 
         int x = this.wordBox.X;
         int y = this.wordBox.Bottom + 4; // 保留 4px 视觉空隙
@@ -215,28 +206,36 @@ public class WordOverlay
 
         this.bubbleBox = new Rectangle(x, y, width, height);
 
-        // 星标在左，垂直居中
+        // 星标在左，中文释义在右（单行）
         this.starBox = new Rectangle(
             x + padding,
             y + (height - starSize) / 2,
             starSize,
             starSize
         );
+        this.transPos = new Vector2(
+            x + padding + starSize + gap,
+            y + (height - transSize.Y) / 2
+        );
 
-        // 单词（第一行）与中文释义（第二行）
-        int textX = x + padding + starSize + gap;
-        int textY = y + (height - textHeight) / 2;
-        this.wordPos = new Vector2(textX, textY);
-        this.transPos = new Vector2(textX, textY + wordSize.Y + lineGap);
-
-        // 桥接矩形：覆盖单词底部到气泡顶部之间的间隙（仅命中判定，不绘制）
+        // 桥接矩形：覆盖单词与气泡之间的 4px 间隙（气泡可能在单词下方，也可能因视口上移而在上方）
         int bridgeLeft = Math.Max(this.wordBox.X, this.bubbleBox.X);
         int bridgeRight = Math.Min(this.wordBox.Right, this.bubbleBox.Right);
         int bridgeWidth = bridgeRight - bridgeLeft;
-        int bridgeHeight = this.bubbleBox.Top - this.wordBox.Bottom;
-        this.bridgeRect = (bridgeWidth > 0 && bridgeHeight > 0)
-            ? new Rectangle(bridgeLeft, this.wordBox.Bottom, bridgeWidth, bridgeHeight)
-            : Rectangle.Empty;
+        if (bridgeWidth <= 0)
+        {
+            this.bridgeRect = Rectangle.Empty;
+        }
+        else if (this.bubbleBox.Top >= this.wordBox.Bottom)
+        {
+            // 气泡在单词下方
+            this.bridgeRect = new Rectangle(bridgeLeft, this.wordBox.Bottom, bridgeWidth, this.bubbleBox.Top - this.wordBox.Bottom);
+        }
+        else
+        {
+            // 气泡在单词上方（被视口上移）
+            this.bridgeRect = new Rectangle(bridgeLeft, this.bubbleBox.Bottom, bridgeWidth, this.wordBox.Top - this.bubbleBox.Bottom);
+        }
     }
 
     /// <summary>核心命中检测：复刻 SpriteText.drawString 的英文布局，逐字符计算单词包围盒。</summary>
