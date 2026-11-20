@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using StardewModdingAPI;
+using StardewValley;
 
 namespace BilingualLearning;
 
@@ -17,9 +18,9 @@ public static class Exporter
         ["Winter"] = "冬",
     };
 
-    public static void Export(IReadOnlyList<VocabEntry> words, string modDir, IMonitor monitor)
+    public static void Export(IReadOnlyList<VocabEntry> words, string location, string modDir, IMonitor monitor)
     {
-        string exportDir = Path.Combine(modDir, "exports");
+        string exportDir = ResolveExportDir(location, modDir);
         Directory.CreateDirectory(exportDir);
 
         string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
@@ -28,6 +29,22 @@ public static class Exporter
         ExportAnki(words, Path.Combine(exportDir, $"vocabulary-{stamp}.anki.txt"));
 
         monitor.Log($"已导出生词（{words.Count} 词）到 {exportDir}", LogLevel.Info);
+        Game1.addHUDMessage(new HUDMessage($"Exported {words.Count} words to {exportDir}"));
+    }
+
+    private static string ResolveExportDir(string location, string modDir)
+    {
+        switch (location)
+        {
+            case "Desktop":
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "BilingualLearning");
+            case "Downloads":
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "BilingualLearning");
+            case "Mod folder":
+                return Path.Combine(modDir, "exports");
+            default:
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "StardewValley", "BilingualLearning");
+        }
     }
 
     private static string FormatFirstSeen(VocabEntry e)

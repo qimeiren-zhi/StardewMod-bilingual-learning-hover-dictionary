@@ -98,6 +98,7 @@ public class ModEntry : Mod
 
         api.RegisterSimpleOption(manifest, "Toggle key", "Toggle the lookup feature on/off", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
         api.RegisterSimpleOption(manifest, "Export key", "Export the vocabulary", () => this.config.ExportKey, value => this.config.ExportKey = value);
+        api.RegisterChoiceOption(manifest, "Export location", "Where to save exported files", () => this.config.ExportLocation, value => this.config.ExportLocation = value, new[] { "Documents", "Desktop", "Downloads", "Mod folder" });
 
         foreach (var (tag, label) in LevelOptions)
         {
@@ -151,7 +152,7 @@ public class ModEntry : Mod
             // 导出生词本
             if (this.vocabulary != null && this.vocabulary.Words.Count > 0)
             {
-                Exporter.Export(this.vocabulary.Words, this.Helper.DirectoryPath, this.Monitor);
+                Exporter.Export(this.vocabulary.Words, this.config.ExportLocation, this.Helper.DirectoryPath, this.Monitor);
             }
             else
             {
