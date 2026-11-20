@@ -16,6 +16,7 @@ namespace BilingualLearning;
 public class WordOverlay
 {
     private IMonitor monitor = null!;
+    private DictionaryData? dictionary;
 
     // —— 覆盖层状态 ——
     private string? hoveredWord;
@@ -29,9 +30,10 @@ public class WordOverlay
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
     private static readonly Rectangle IridiumStarSource = new(346, 392, 8, 8);
 
-    public void Init(IMonitor monitor)
+    public void Init(IMonitor monitor, DictionaryData dictionary)
     {
         this.monitor = monitor;
+        this.dictionary = dictionary;
     }
 
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
@@ -67,6 +69,16 @@ public class WordOverlay
             if (word != this.hoveredWord)
             {
                 this.monitor.Log($"S2 命中单词：'{word}' @ {rect}", LogLevel.Info);
+
+                // S4 查词：命中新词时查词典并记录结果
+                if (this.dictionary != null && this.dictionary.TryGet(word, out var entry))
+                {
+                    this.monitor.Log($"S4 查词：'{word}' → [{entry.Tag}] {entry.Translation}", LogLevel.Info);
+                }
+                else
+                {
+                    this.monitor.Log($"S4 查词：'{word}' → 未收录", LogLevel.Info);
+                }
             }
             this.hoveredWord = word;
             this.wordBox = rect;

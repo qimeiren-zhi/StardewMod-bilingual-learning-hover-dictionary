@@ -17,7 +17,8 @@ public class ModEntry : Mod
     public override void Entry(IModHelper helper)
     {
         instance = this;
-        this.overlay.Init(this.Monitor);
+        var dictionary = DictionaryData.Load(helper, this.Monitor);
+        this.overlay.Init(this.Monitor, dictionary);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 

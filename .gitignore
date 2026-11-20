@@ -15,3 +15,7 @@ Dialogue.cs
 SpriteText.cs
 IClickableMenu.cs
 reflection-notes.txt
+
+# 原始词典与下载数据（大文件，可重新下载）
+tools/ecdict.csv
+tools/ecdict-repo/
