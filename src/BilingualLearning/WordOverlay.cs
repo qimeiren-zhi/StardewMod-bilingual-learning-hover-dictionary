@@ -205,7 +205,7 @@ public class WordOverlay
         return LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.en;
     }
 
-    /// <summary>6.2 等级过滤：命中任一所选等级即显示；无标签视为低于阈值。</summary>
+    /// <summary>6.2 等级过滤：命中任一所选等级即显示；无标签视为低于阈值；专有名词（prop）恒保留。</summary>
     private bool IsLevelMatch(string tag)
     {
         if (this.config.EnabledLevels == null || this.config.EnabledLevels.Count == 0)
@@ -218,6 +218,10 @@ public class WordOverlay
         }
         foreach (string t in tag.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
+            if (t == "prop")
+            {
+                return true; // 专有名词：保留，按类别显示（NPC 名已由名称过滤先行拦截）
+            }
             if (this.config.EnabledLevels.Contains(t))
             {
                 return true;
