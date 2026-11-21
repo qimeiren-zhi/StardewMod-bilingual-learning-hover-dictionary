@@ -13,4 +13,7 @@ public class ModConfig
 
     /// <summary>气泡风格：Default（深色）/ Sandy's Notes（浅色）。</summary>
     public string BubbleStyle { get; set; } = "Default";
+
+    /// <summary>打开知识卡片（悬停物品查词）的快捷键。</summary>
+    public SButton LookupKey { get; set; } = SButton.F1;
 }

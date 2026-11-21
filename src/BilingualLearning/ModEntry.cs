@@ -20,6 +20,10 @@ public class ModEntry : Mod
     private Vocabulary? vocabulary;
     private ModConfig config = new();
 
+    private static string? lastTooltipTitle;
+    private static string? lastTooltipBody;
+    private IClickableMenu? pendingRestore;
+
     public override void Entry(IModHelper helper)
     {
         instance = this;
@@ -66,11 +70,38 @@ public class ModEntry : Mod
         // S3: 气泡覆盖层绘制
         helper.Events.Display.RenderedActiveMenu += this.OnRenderedActiveMenu;
 
+        // 知识卡片：观察 drawHoverText（只读参数，不改变游戏逻辑）
+        var drawHoverText = FindDrawHoverTextMethod();
+        if (drawHoverText != null)
+        {
+            harmony.Patch(
+                original: drawHoverText,
+                postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawHoverText))
+            );
+        }
+        else
+        {
+            this.Monitor.Log("未找到 IClickableMenu.drawHoverText，知识卡片将不可用", LogLevel.Warn);
+        }
+
         // F11/F9 快捷键
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
 
+        // 知识卡片关闭后恢复原菜单
+        helper.Events.GameLoop.UpdateTicked += this.OnUpdateTicked;
+
         // GMCM 配置菜单（可选前置）：在 GameLaunched（所有 mod 初始化完成后）再注册
         helper.Events.GameLoop.GameLaunched += (sender, e) => this.RegisterConfigMenu(helper);
+    }
+
+    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs e)
+    {
+        // 知识卡片被关闭（activeClickableMenu 变 null）后，恢复打开前的菜单
+        if (this.pendingRestore != null && Game1.activeClickableMenu == null)
+        {
+            this.Helper.Reflection.GetField<IClickableMenu>(typeof(Game1), "_activeClickableMenu").SetValue(this.pendingRestore);
+            this.pendingRestore = null;
+        }
     }
 
     private Texture2D? LoadBubbleTexture(IModHelper helper, string path)
@@ -83,6 +114,29 @@ public class ModEntry : Mod
         {
             this.Monitor.Log($"加载气泡背景失败（{path}）：{ex.Message}", LogLevel.Warn);
             return null;
+        }
+    }
+
+    private static System.Reflection.MethodInfo? FindDrawHoverTextMethod()
+    {
+        foreach (var m in AccessTools.GetDeclaredMethods(typeof(IClickableMenu)))
+        {
+            if (m.Name == "drawHoverText"
+                && m.GetParameters().Length > 2
+                && m.GetParameters()[1].ParameterType == typeof(string))
+            {
+                return m;
+            }
+        }
+        return null;
+    }
+
+    private static void AfterDrawHoverText(object[] __args)
+    {
+        if (__args.Length > 9)
+        {
+            lastTooltipBody = __args[1] as string;
+            lastTooltipTitle = __args[6] as string;
         }
     }
 
@@ -145,6 +199,28 @@ public class ModEntry : Mod
             else
             {
                 this.Monitor.Log("生词本为空，无需导出", LogLevel.Info);
+            }
+        }
+        else if (e.Button == this.config.LookupKey)
+        {
+            // 知识卡片：已打开则关闭，否则用上一帧捕获的 tooltip 打开
+            if (Game1.activeClickableMenu is KnowledgeCardMenu existing)
+            {
+                existing.exitThisMenu();
+                return;
+            }
+            if (!string.IsNullOrEmpty(lastTooltipTitle) || !string.IsNullOrEmpty(lastTooltipBody))
+            {
+                this.pendingRestore = Game1.activeClickableMenu;
+                var card = new KnowledgeCardMenu(lastTooltipTitle ?? "", lastTooltipBody ?? "");
+
+                // 绕过 Game1.activeClickableMenu setter（它会 Dispose 原菜单），避免关闭后回不到背包
+                this.Helper.Reflection.GetField<IClickableMenu>(typeof(Game1), "_activeClickableMenu").SetValue(card);
+                this.Monitor.Log($"知识卡片已打开：{lastTooltipTitle}", LogLevel.Info);
+            }
+            else
+            {
+                this.Monitor.Log("当前没有可用的 tooltip（先悬停一个物品）", LogLevel.Info);
             }
         }
     }
