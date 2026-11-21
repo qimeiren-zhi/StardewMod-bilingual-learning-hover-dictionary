@@ -10,4 +10,7 @@ public class ModConfig
 
     /// <summary>导出位置：Documents / Desktop / Downloads / Mod folder。</summary>
     public string ExportLocation { get; set; } = "Documents";
+
+    /// <summary>气泡风格：Default（深色）/ Sandy's Notes（浅色）。</summary>
+    public string BubbleStyle { get; set; } = "Default";
 }

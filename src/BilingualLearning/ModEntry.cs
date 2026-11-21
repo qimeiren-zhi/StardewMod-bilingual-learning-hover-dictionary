@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GenericModConfigMenu;
 using HarmonyLib;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -35,7 +36,10 @@ public class ModEntry : Mod
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
 
-        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet);
+        var bubbleDefault = this.LoadBubbleTexture(helper, "assets/bubble_default.png");
+        var bubbleSandy = this.LoadBubbleTexture(helper, "assets/bubble_sandy.png");
+
+        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet, this.config, bubbleDefault, bubbleSandy);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -69,6 +73,19 @@ public class ModEntry : Mod
         helper.Events.GameLoop.GameLaunched += (sender, e) => this.RegisterConfigMenu(helper);
     }
 
+    private Texture2D? LoadBubbleTexture(IModHelper helper, string path)
+    {
+        try
+        {
+            return helper.ModContent.Load<Texture2D>(path);
+        }
+        catch (Exception ex)
+        {
+            this.Monitor.Log($"加载气泡背景失败（{path}）：{ex.Message}", LogLevel.Warn);
+            return null;
+        }
+    }
+
     private void RegisterConfigMenu(IModHelper helper)
     {
         var api = helper.ModRegistry.GetApi<IApi>("spacechase0.GenericModConfigMenu");
@@ -89,6 +106,7 @@ public class ModEntry : Mod
         api.RegisterSimpleOption(manifest, "Toggle key", "Toggle the lookup feature on/off", () => this.config.ToggleKey, value => this.config.ToggleKey = value);
         api.RegisterSimpleOption(manifest, "Export key", "Export the vocabulary", () => this.config.ExportKey, value => this.config.ExportKey = value);
         api.RegisterChoiceOption(manifest, "Export location", "Where to save exported files", () => this.config.ExportLocation, value => this.config.ExportLocation = value, new[] { "Documents", "Desktop", "Downloads", "Mod folder" });
+        api.RegisterChoiceOption(manifest, "Bubble style", "Bubble background and text color style", () => this.config.BubbleStyle, value => this.config.BubbleStyle = value, new[] { "Default", "Sandy's Notes" });
     }
 
     private HashSet<string> LoadNpcNames(IModHelper helper)

@@ -20,6 +20,9 @@ public class WordOverlay
     private ChineseFont? chineseFont;
     private Vocabulary? vocabulary;
     private HashSet<string>? nameSet;
+    private ModConfig config = new();
+    private Texture2D? bubbleDefault;
+    private Texture2D? bubbleSandy;
 
     /// <summary>学习模式总开关（F11）。</summary>
     public bool Enabled = true;
@@ -36,13 +39,16 @@ public class WordOverlay
     /// <summary>铱星物品品质星的源矩形（Game1.mouseCursors）。</summary>
     private static readonly Rectangle IridiumStarSource = new(346, 392, 8, 8);
 
-    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont, Vocabulary vocabulary, HashSet<string> nameSet)
+    public void Init(IMonitor monitor, DictionaryData dictionary, ChineseFont? chineseFont, Vocabulary vocabulary, HashSet<string> nameSet, ModConfig config, Texture2D? bubbleDefault, Texture2D? bubbleSandy)
     {
         this.monitor = monitor;
         this.dictionary = dictionary;
         this.chineseFont = chineseFont;
         this.vocabulary = vocabulary;
         this.nameSet = nameSet;
+        this.config = config;
+        this.bubbleDefault = bubbleDefault;
+        this.bubbleSandy = bubbleSandy;
     }
 
     /// <summary>S2：hover 命中检测（Harmony postfix on performHoverAction）。</summary>
@@ -130,20 +136,30 @@ public class WordOverlay
             return;
         }
 
-        // 气泡背景：复用游戏对话框九宫格纹理（mouseCursors 306,320,16,16）
-        IClickableMenu.drawTextureBox(
-            b,
-            Game1.mouseCursors,
-            new Rectangle(306, 320, 16, 16),
-            this.bubbleBox.X,
-            this.bubbleBox.Y,
-            this.bubbleBox.Width,
-            this.bubbleBox.Height,
-            Color.White,
-            2f,
-            drawShadow: false,
-            draw_layer: 0.95f
-        );
+        // 气泡背景：按风格选择纹理（Default 深色 / Sandy's Notes 浅色）
+        bool sandy = this.config.BubbleStyle == "Sandy's Notes" && this.bubbleSandy != null;
+        Texture2D bgTex;
+        Rectangle bgSrc;
+        float bgScale;
+        if (sandy)
+        {
+            bgTex = this.bubbleSandy!;
+            bgSrc = new Rectangle(0, 0, bgTex.Width, bgTex.Height);
+            bgScale = 1f;
+        }
+        else if (this.bubbleDefault != null)
+        {
+            bgTex = this.bubbleDefault;
+            bgSrc = new Rectangle(0, 0, bgTex.Width, bgTex.Height);
+            bgScale = 0.5f;
+        }
+        else
+        {
+            bgTex = Game1.mouseCursors;
+            bgSrc = new Rectangle(306, 320, 16, 16);
+            bgScale = 2f;
+        }
+        IClickableMenu.drawTextureBox(b, bgTex, bgSrc, this.bubbleBox.X, this.bubbleBox.Y, this.bubbleBox.Width, this.bubbleBox.Height, Color.White, bgScale, drawShadow: false, draw_layer: 0.95f);
 
         // 星标（左，0.96，位于背景之上）：点亮=白；未点亮=深灰半透明
         bool lit = this.vocabulary?.Contains(this.hoveredWord) ?? false;
@@ -153,7 +169,7 @@ public class WordOverlay
         // 中文释义（词性 + 释义，单行，0.96）
         if (this.hoveredTranslation != null)
         {
-            var transColor = new Color(240, 240, 240);
+            var transColor = sandy ? new Color(86, 22, 12) : new Color(240, 240, 240);
             if (this.chineseFont != null)
             {
                 this.chineseFont.Draw(b, this.hoveredTranslation, this.transPos, transColor, 0.96f);
