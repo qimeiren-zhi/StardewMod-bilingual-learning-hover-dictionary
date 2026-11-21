@@ -23,6 +23,10 @@ public class ModEntry : Mod
     private static string? lastTooltipTitle;
     private static string? lastTooltipBody;
     private IClickableMenu? pendingRestore;
+    private DictionaryData? dictionary;
+    private ChineseFont? chineseFont;
+    private Texture2D? bubbleDefault;
+    private Texture2D? bubbleSandy;
 
     public override void Entry(IModHelper helper)
     {
@@ -30,8 +34,8 @@ public class ModEntry : Mod
 
         // 配置 + 词典 + 中文字体 + 生词本
         this.config = helper.ReadConfig<ModConfig>();
-        var dictionary = DictionaryData.Load(helper, this.Monitor);
-        var chineseFont = ChineseFont.Load(helper, this.Monitor, 16f * SpriteText.FontPixelZoom);
+        this.dictionary = DictionaryData.Load(helper, this.Monitor);
+        this.chineseFont = ChineseFont.Load(helper, this.Monitor, 16f * SpriteText.FontPixelZoom);
         this.vocabulary = new Vocabulary(helper, this.Monitor);
 
         // 生词本在存档加载后才读取（需存档已加载）
@@ -40,10 +44,10 @@ public class ModEntry : Mod
         // 人物名称集合（NPC 名，用于过滤）
         var nameSet = this.LoadNpcNames(helper);
 
-        var bubbleDefault = this.LoadBubbleTexture(helper, "assets/bubble_default.png");
-        var bubbleSandy = this.LoadBubbleTexture(helper, "assets/bubble_sandy.png");
+        this.bubbleDefault = this.LoadBubbleTexture(helper, "assets/bubble_default.png");
+        this.bubbleSandy = this.LoadBubbleTexture(helper, "assets/bubble_sandy.png");
 
-        this.overlay.Init(this.Monitor, dictionary, chineseFont, this.vocabulary!, nameSet, this.config, bubbleDefault, bubbleSandy);
+        this.overlay.Init(this.Monitor, this.dictionary, this.chineseFont, this.vocabulary!, nameSet, this.config, this.bubbleDefault, this.bubbleSandy);
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -212,7 +216,7 @@ public class ModEntry : Mod
             if (!string.IsNullOrEmpty(lastTooltipTitle) || !string.IsNullOrEmpty(lastTooltipBody))
             {
                 this.pendingRestore = Game1.activeClickableMenu;
-                var card = new KnowledgeCardMenu(lastTooltipTitle ?? "", lastTooltipBody ?? "");
+                var card = new KnowledgeCardMenu(lastTooltipTitle ?? "", lastTooltipBody ?? "", this.dictionary, this.vocabulary, this.chineseFont, this.config, this.bubbleDefault, this.bubbleSandy);
 
                 // 绕过 Game1.activeClickableMenu setter（它会 Dispose 原菜单），避免关闭后回不到背包
                 this.Helper.Reflection.GetField<IClickableMenu>(typeof(Game1), "_activeClickableMenu").SetValue(card);

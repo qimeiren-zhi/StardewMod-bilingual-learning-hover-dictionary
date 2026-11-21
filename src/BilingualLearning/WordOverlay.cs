@@ -369,7 +369,7 @@ public class WordOverlay
     }
 
     /// <summary>去除单词两侧标点（3.2），保留内部撇号/连字符（如 don't、well-known）。</summary>
-    private static string NormalizeWord(string raw)
+    internal static string NormalizeWord(string raw)
     {
         int start = 0;
         int end = raw.Length;
