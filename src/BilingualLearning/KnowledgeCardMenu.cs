@@ -11,16 +11,16 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 知识卡片菜单（方案 A）：悬停物品时按 F1 打开。
-/// 直接重放原生的 IClickableMenu.drawHoverText（固定坐标），所以类别/增益/价格等与原生 Tooltip 完全一致；
-/// 卡片外加深色蒙版；正文/标题上可悬停英文单词查看中文释义。
+/// 重放原生 IClickableMenu.drawHoverText（固定坐标）→ 类别/增益/价格与原生一致；
+/// 左侧显示物品图标；卡片外深色蒙版；重新捕获全部文字位置以支持任意文字悬浮查词；气泡星标可点击收藏。
 /// </summary>
 public class KnowledgeCardMenu : IClickableMenu
 {
+    private const int IconOffset = 56;
+
     private readonly MethodInfo? tooltipMethod;
     private readonly object[]? tooltipArgs;
-    private readonly string title;
-    private readonly string body;
-    private readonly string categoryName;
+    private readonly Item? hoveredItem;
     private readonly DictionaryData? dictionary;
     private readonly Vocabulary? vocabulary;
     private readonly ChineseFont? chineseFont;
@@ -34,6 +34,7 @@ public class KnowledgeCardMenu : IClickableMenu
     private string? hoveredWord;
     private Rectangle hoveredWordBox;
     private string? hoveredTranslation;
+    private Rectangle lastStarBox;
 
     public KnowledgeCardMenu(
         MethodInfo? tooltipMethod,
@@ -48,9 +49,7 @@ public class KnowledgeCardMenu : IClickableMenu
     {
         this.tooltipMethod = tooltipMethod;
         this.tooltipArgs = tooltipArgs;
-        this.title = (tooltipArgs != null && tooltipArgs.Length > 6 ? tooltipArgs[6] as string : null) ?? "";
-        this.body = (tooltipArgs != null && tooltipArgs.Length > 1 ? tooltipArgs[1] as string : null) ?? "";
-        this.categoryName = (tooltipArgs != null && tooltipArgs.Length > 9 && tooltipArgs[9] is Item it) ? it.getCategoryName() : "";
+        this.hoveredItem = tooltipArgs != null && tooltipArgs.Length > 9 ? tooltipArgs[9] as Item : null;
         this.dictionary = dictionary;
         this.vocabulary = vocabulary;
         this.chineseFont = chineseFont;
@@ -58,30 +57,86 @@ public class KnowledgeCardMenu : IClickableMenu
         this.bubbleDefault = bubbleDefault;
         this.bubbleSandy = bubbleSandy;
 
-        // 固定居中偏左上位置（重放的原生 tooltip 以此为左上角）
         this.cardX = Math.Max(24, Game1.uiViewport.Width / 2 - 250);
         this.cardY = Math.Max(24, Game1.uiViewport.Height / 2 - 220);
-
         this.xPositionOnScreen = this.cardX;
         this.yPositionOnScreen = this.cardY;
-        this.width = 500;
-        this.height = 440;
-
-        this.ComputeWordRects();
+        this.width = 560;
+        this.height = 460;
     }
 
-    private void ComputeWordRects()
+    public override void draw(SpriteBatch b)
+    {
+        // 卡片外深色蒙版
+        b.Draw(
+            Game1.fadeToBlackRect,
+            new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
+            Color.Black * 0.65f
+        );
+
+        // 物品图标（卡片左侧）
+        if (this.hoveredItem != null)
+        {
+            this.hoveredItem.drawInMenu(
+                b,
+                new Vector2(this.cardX + 4, this.cardY + 12),
+                0.75f,
+                1f,
+                0.95f,
+                StackDrawType.Hide,
+                Color.White,
+                false
+            );
+        }
+
+        // 重放原生 Tooltip（文字右移给图标让位）
+        if (this.tooltipMethod != null && this.tooltipArgs != null)
+        {
+            object[] args = (object[])this.tooltipArgs.Clone();
+            args[0] = b;                          // 当前 SpriteBatch
+            args[13] = this.cardX + IconOffset;    // overrideX
+            args[14] = this.cardY;                 // overrideY
+
+            TooltipTextCapture.Begin();
+            this.tooltipMethod.Invoke(null, args);
+            TooltipTextCapture.End();
+
+            this.BuildWordRectsFromCapture();
+        }
+
+        // 悬浮查词气泡
+        this.UpdateHover();
+        if (this.hoveredWord != null && this.hoveredTranslation != null)
+        {
+            bool starred = this.vocabulary?.Contains(this.hoveredWord) ?? false;
+            BubbleLayout layout = BubbleRenderer.Draw(
+                b,
+                this.hoveredWordBox,
+                this.hoveredTranslation,
+                starred,
+                this.config,
+                this.chineseFont,
+                this.bubbleDefault,
+                this.bubbleSandy
+            );
+            this.lastStarBox = layout.StarBox;
+        }
+        else
+        {
+            this.lastStarBox = Rectangle.Empty;
+        }
+
+        // 自定义菜单必须自己画光标
+        this.drawMouse(b);
+    }
+
+    private void BuildWordRectsFromCapture()
     {
         this.wordRects.Clear();
-
-        // 标题：drawHoverText 在 (x+16, y+16+4) 绘制
-        this.AddWords(this.title, new Vector2(this.cardX + 16, this.cardY + 20), Game1.dialogueFont);
-
-        // 描述：标题高度 +（有类别时再 + 一行）+ 固定偏移
-        float titleH = Game1.dialogueFont.MeasureString(this.title).Y;
-        float smallH = Game1.smallFont.MeasureString("T").Y;
-        float descY = this.cardY + titleH + (string.IsNullOrEmpty(this.categoryName) ? 0 : smallH) + 36;
-        this.AddWords(this.body, new Vector2(this.cardX + 16, descY), Game1.smallFont);
+        foreach ((string text, Vector2 pos, SpriteFont font) in TooltipTextCapture.GetDistinct())
+        {
+            this.AddWords(text, pos, font);
+        }
     }
 
     private void AddWords(string text, Vector2 origin, SpriteFont font)
@@ -104,46 +159,6 @@ public class KnowledgeCardMenu : IClickableMenu
                 x += size.X + font.MeasureString(" ").X;
             }
         }
-    }
-
-    public override void draw(SpriteBatch b)
-    {
-        // 卡片外深色蒙版
-        b.Draw(
-            Game1.fadeToBlackRect,
-            new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
-            Color.Black * 0.65f
-        );
-
-        // 重放原生 Tooltip（完整内容：标题/类别/描述/增益/价格），固定坐标
-        if (this.tooltipMethod != null && this.tooltipArgs != null)
-        {
-            object[] args = (object[])this.tooltipArgs.Clone();
-            args[0] = b;              // 用当前 SpriteBatch
-            args[13] = this.cardX;    // overrideX
-            args[14] = this.cardY;    // overrideY
-            this.tooltipMethod.Invoke(null, args);
-        }
-
-        // 悬浮查词气泡
-        this.UpdateHover();
-        if (this.hoveredWord != null && this.hoveredTranslation != null)
-        {
-            bool starred = this.vocabulary?.Contains(this.hoveredWord) ?? false;
-            BubbleRenderer.Draw(
-                b,
-                this.hoveredWordBox,
-                this.hoveredTranslation,
-                starred,
-                this.config,
-                this.chineseFont,
-                this.bubbleDefault,
-                this.bubbleSandy
-            );
-        }
-
-        // 自定义菜单必须自己画光标
-        this.drawMouse(b);
     }
 
     private void UpdateHover()
@@ -175,6 +190,56 @@ public class KnowledgeCardMenu : IClickableMenu
                 ? entry.Translation
                 : $"{entry.Pos} {entry.Translation}";
             return;
+        }
+    }
+
+    public override void receiveLeftClick(int x, int y, bool playSound = true)
+    {
+        // 点击气泡星标 → 收藏/取消
+        if (this.hoveredWord != null && !this.lastStarBox.IsEmpty && this.lastStarBox.Contains(x, y))
+        {
+            this.ToggleStar();
+            return;
+        }
+        base.receiveLeftClick(x, y, playSound);
+    }
+
+    private void ToggleStar()
+    {
+        if (this.vocabulary == null || this.hoveredWord == null)
+        {
+            return;
+        }
+
+        if (this.vocabulary.Contains(this.hoveredWord))
+        {
+            this.vocabulary.Remove(this.hoveredWord);
+            return;
+        }
+
+        if (this.dictionary != null && this.dictionary.TryGet(this.hoveredWord, out var entry))
+        {
+            string season = Game1.currentSeason ?? "";
+            if (season.Length > 0)
+            {
+                season = char.ToUpper(season[0]) + season.Substring(1);
+            }
+
+            this.vocabulary.Add(new VocabEntry
+            {
+                Word = this.hoveredWord,
+                Pos = entry.Pos,
+                Translation = entry.Translation,
+                Sentence = this.tooltipArgs != null && this.tooltipArgs.Length > 1
+                    ? this.tooltipArgs[1] as string ?? ""
+                    : "",
+                FirstSeen = new FirstSeen
+                {
+                    Year = Game1.year,
+                    Season = season,
+                    Day = Game1.dayOfMonth
+                }
+            });
         }
     }
 

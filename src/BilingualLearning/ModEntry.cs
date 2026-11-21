@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GenericModConfigMenu;
 using HarmonyLib;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
@@ -91,6 +92,16 @@ public class ModEntry : Mod
             this.Monitor.Log("未找到 IClickableMenu.drawHoverText，知识卡片将不可用", LogLevel.Warn);
         }
 
+        // 捕获卡片重放期间所有 DrawString 文本的位置（用于全文字悬浮查词）
+        var drawStringMethod = AccessTools.Method(typeof(SpriteBatch), "DrawString", new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color) });
+        if (drawStringMethod != null)
+        {
+            harmony.Patch(
+                original: drawStringMethod,
+                postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawString))
+            );
+        }
+
         // F11/F9 快捷键
         helper.Events.Input.ButtonPressed += this.OnButtonPressed;
 
@@ -136,6 +147,20 @@ public class ModEntry : Mod
             }
         }
         return null;
+    }
+
+    private static void AfterDrawString(object[] __args)
+    {
+        if (!TooltipTextCapture.Capturing || __args.Length < 4)
+        {
+            return;
+        }
+        var font = __args[0] as SpriteFont;
+        var text = __args[1] as string;
+        if (font != null && text != null && __args[2] is Vector2 pos)
+        {
+            TooltipTextCapture.Record(font, text, pos);
+        }
     }
 
     private static void AfterDrawHoverText(object[] __args)

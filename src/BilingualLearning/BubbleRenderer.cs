@@ -5,13 +5,26 @@ using StardewValley.Menus;
 
 namespace BilingualLearning;
 
+/// <summary>气泡布局（背景/星标矩形），供命中检测使用。</summary>
+public readonly struct BubbleLayout
+{
+    public readonly Rectangle BubbleBox;
+    public readonly Rectangle StarBox;
+
+    public BubbleLayout(Rectangle bubbleBox, Rectangle starBox)
+    {
+        this.BubbleBox = bubbleBox;
+        this.StarBox = starBox;
+    }
+}
+
 /// <summary>气泡渲染器：对话与知识卡片共用的「词性+释义」气泡（背景/星标/中文）。</summary>
 public static class BubbleRenderer
 {
     private static readonly Rectangle IridiumStarSource = new(346, 392, 8, 8);
 
-    /// <summary>在单词下方（或视口上方）绘制气泡，返回气泡矩形。</summary>
-    public static Rectangle Draw(
+    /// <summary>在单词下方（或视口上方）绘制气泡，返回气泡/星标矩形。</summary>
+    public static BubbleLayout Draw(
         SpriteBatch b,
         Rectangle wordBox,
         string translation,
@@ -71,6 +84,6 @@ public static class BubbleRenderer
             b.DrawString(Game1.smallFont, translation, transPos, transColor, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.96f);
         }
 
-        return bubbleBox;
+        return new BubbleLayout(bubbleBox, starBox);
     }
 }
