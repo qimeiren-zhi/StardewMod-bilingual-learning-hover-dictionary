@@ -136,29 +136,13 @@ public class WordOverlay
             return;
         }
 
-        // 气泡背景：按风格选择纹理（Default 深色 / Sandy's Notes 浅色）
-        bool sandy = this.config.BubbleStyle == "Sandy's Notes" && this.bubbleSandy != null;
-        Texture2D bgTex;
-        Rectangle bgSrc;
-        float bgScale;
-        if (sandy)
-        {
-            bgTex = this.bubbleSandy!;
-            bgSrc = new Rectangle(0, 0, bgTex.Width, bgTex.Height);
-            bgScale = 1f;
-        }
-        else if (this.bubbleDefault != null)
-        {
-            bgTex = this.bubbleDefault;
-            bgSrc = new Rectangle(0, 0, bgTex.Width, bgTex.Height);
-            bgScale = 0.5f;
-        }
-        else
-        {
-            bgTex = Game1.mouseCursors;
-            bgSrc = new Rectangle(306, 320, 16, 16);
-            bgScale = 2f;
-        }
+        // 气泡背景：按风格选择纹理（Default / Sandy's Notes 均为浅色底，文字用深棕）
+        bool sandy = this.config.BubbleStyle == "Sandy's Notes";
+        Texture2D? customTex = sandy ? (this.bubbleSandy ?? this.bubbleDefault) : this.bubbleDefault;
+        bool customBg = customTex != null;
+        Texture2D bgTex = customTex ?? Game1.mouseCursors;
+        Rectangle bgSrc = customBg ? new Rectangle(0, 0, bgTex.Width, bgTex.Height) : new Rectangle(306, 320, 16, 16);
+        float bgScale = customBg ? 1f : 2f;
         IClickableMenu.drawTextureBox(b, bgTex, bgSrc, this.bubbleBox.X, this.bubbleBox.Y, this.bubbleBox.Width, this.bubbleBox.Height, Color.White, bgScale, drawShadow: false, draw_layer: 0.95f);
 
         // 星标（左，0.96，位于背景之上）：点亮=白；未点亮=深灰半透明
@@ -169,7 +153,7 @@ public class WordOverlay
         // 中文释义（词性 + 释义，单行，0.96）
         if (this.hoveredTranslation != null)
         {
-            var transColor = sandy ? new Color(86, 22, 12) : new Color(240, 240, 240);
+            var transColor = customBg ? new Color(86, 22, 12) : new Color(240, 240, 240);
             if (this.chineseFont != null)
             {
                 this.chineseFont.Draw(b, this.hoveredTranslation, this.transPos, transColor, 0.96f);
@@ -282,7 +266,7 @@ public class WordOverlay
             ? this.chineseFont.Measure(this.hoveredTranslation)
             : Game1.smallFont.MeasureString(this.hoveredTranslation);
 
-        int padding = 8;
+        int padding = 12;
         int starSize = 24;
         int gap = 10;
 
