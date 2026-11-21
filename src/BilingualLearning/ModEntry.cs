@@ -22,6 +22,8 @@ public class ModEntry : Mod
 
     private static string? lastTooltipTitle;
     private static string? lastTooltipBody;
+    private static object[]? lastTooltipArgs;
+    private static System.Reflection.MethodInfo? drawHoverTextMethod;
     private IClickableMenu? pendingRestore;
     private DictionaryData? dictionary;
     private ChineseFont? chineseFont;
@@ -78,6 +80,7 @@ public class ModEntry : Mod
         var drawHoverText = FindDrawHoverTextMethod();
         if (drawHoverText != null)
         {
+            drawHoverTextMethod = drawHoverText;
             harmony.Patch(
                 original: drawHoverText,
                 postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawHoverText))
@@ -141,6 +144,7 @@ public class ModEntry : Mod
         {
             lastTooltipBody = __args[1] as string;
             lastTooltipTitle = __args[6] as string;
+            lastTooltipArgs = (object[])__args.Clone();
         }
     }
 
@@ -216,7 +220,7 @@ public class ModEntry : Mod
             if (!string.IsNullOrEmpty(lastTooltipTitle) || !string.IsNullOrEmpty(lastTooltipBody))
             {
                 this.pendingRestore = Game1.activeClickableMenu;
-                var card = new KnowledgeCardMenu(lastTooltipTitle ?? "", lastTooltipBody ?? "", this.dictionary, this.vocabulary, this.chineseFont, this.config, this.bubbleDefault, this.bubbleSandy);
+                var card = new KnowledgeCardMenu(drawHoverTextMethod, lastTooltipArgs, this.dictionary, this.vocabulary, this.chineseFont, this.config, this.bubbleDefault, this.bubbleSandy);
 
                 // 绕过 Game1.activeClickableMenu setter（它会 Dispose 原菜单），避免关闭后回不到背包
                 this.Helper.Reflection.GetField<IClickableMenu>(typeof(Game1), "_activeClickableMenu").SetValue(card);

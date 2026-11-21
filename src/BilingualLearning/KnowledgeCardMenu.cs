@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,13 +11,16 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 知识卡片菜单（方案 A）：悬停物品时按 F1 打开。
-/// 原生 Tooltip 风格（menuTexture 九宫格）+ 卡片外深色蒙版；打开菜单即暂停游戏。
-/// 卡片正文/标题上可悬停英文单词查看中文释义（复用气泡渲染器）。
+/// 直接重放原生的 IClickableMenu.drawHoverText（固定坐标），所以类别/增益/价格等与原生 Tooltip 完全一致；
+/// 卡片外加深色蒙版；正文/标题上可悬停英文单词查看中文释义。
 /// </summary>
 public class KnowledgeCardMenu : IClickableMenu
 {
+    private readonly MethodInfo? tooltipMethod;
+    private readonly object[]? tooltipArgs;
     private readonly string title;
     private readonly string body;
+    private readonly string categoryName;
     private readonly DictionaryData? dictionary;
     private readonly Vocabulary? vocabulary;
     private readonly ChineseFont? chineseFont;
@@ -24,17 +28,16 @@ public class KnowledgeCardMenu : IClickableMenu
     private readonly Texture2D? bubbleDefault;
     private readonly Texture2D? bubbleSandy;
 
-    private Rectangle cardRect;
-    private Vector2 titlePos;
-    private Vector2 bodyPos;
+    private readonly int cardX;
+    private readonly int cardY;
     private readonly List<(string Word, Rectangle Rect)> wordRects = new();
     private string? hoveredWord;
     private Rectangle hoveredWordBox;
     private string? hoveredTranslation;
 
     public KnowledgeCardMenu(
-        string title,
-        string body,
+        MethodInfo? tooltipMethod,
+        object[]? tooltipArgs,
         DictionaryData? dictionary,
         Vocabulary? vocabulary,
         ChineseFont? chineseFont,
@@ -43,46 +46,42 @@ public class KnowledgeCardMenu : IClickableMenu
         Texture2D? bubbleSandy)
         : base(0, 0, 0, 0)
     {
-        this.title = title ?? "";
-        this.body = body ?? "";
+        this.tooltipMethod = tooltipMethod;
+        this.tooltipArgs = tooltipArgs;
+        this.title = (tooltipArgs != null && tooltipArgs.Length > 6 ? tooltipArgs[6] as string : null) ?? "";
+        this.body = (tooltipArgs != null && tooltipArgs.Length > 1 ? tooltipArgs[1] as string : null) ?? "";
+        this.categoryName = (tooltipArgs != null && tooltipArgs.Length > 9 && tooltipArgs[9] is Item it) ? it.getCategoryName() : "";
         this.dictionary = dictionary;
         this.vocabulary = vocabulary;
         this.chineseFont = chineseFont;
         this.config = config;
         this.bubbleDefault = bubbleDefault;
         this.bubbleSandy = bubbleSandy;
-        this.ComputeLayout();
-        this.initializeUpperRightCloseButton();
+
+        // 固定居中偏左上位置（重放的原生 tooltip 以此为左上角）
+        this.cardX = Math.Max(24, Game1.uiViewport.Width / 2 - 250);
+        this.cardY = Math.Max(24, Game1.uiViewport.Height / 2 - 220);
+
+        this.xPositionOnScreen = this.cardX;
+        this.yPositionOnScreen = this.cardY;
+        this.width = 500;
+        this.height = 440;
+
+        this.ComputeWordRects();
     }
 
-    private void ComputeLayout()
-    {
-        int width = Math.Min(720, Math.Max(320, Game1.uiViewport.Width - 128));
-        string wrapped = Game1.parseText(this.body, Game1.smallFont, width - 32);
-        Vector2 titleSize = Game1.dialogueFont.MeasureString(this.title);
-        Vector2 bodySize = Game1.smallFont.MeasureString(wrapped);
-
-        int height = (int)(titleSize.Y + 12 + bodySize.Y) + 48;
-        int x = (Game1.uiViewport.Width - width) / 2;
-        int y = (Game1.uiViewport.Height - height) / 2;
-
-        this.xPositionOnScreen = x;
-        this.yPositionOnScreen = y;
-        this.width = width;
-        this.height = height;
-        this.cardRect = new Rectangle(x, y, width, height);
-
-        this.titlePos = new Vector2(x + 16, y + 16);
-        this.bodyPos = new Vector2(x + 16, this.titlePos.Y + titleSize.Y + 12);
-
-        this.BuildWordRects(wrapped);
-    }
-
-    private void BuildWordRects(string wrappedBody)
+    private void ComputeWordRects()
     {
         this.wordRects.Clear();
-        this.AddWords(this.title, this.titlePos, Game1.dialogueFont);
-        this.AddWords(wrappedBody, this.bodyPos, Game1.smallFont);
+
+        // 标题：drawHoverText 在 (x+16, y+16+4) 绘制
+        this.AddWords(this.title, new Vector2(this.cardX + 16, this.cardY + 20), Game1.dialogueFont);
+
+        // 描述：标题高度 +（有类别时再 + 一行）+ 固定偏移
+        float titleH = Game1.dialogueFont.MeasureString(this.title).Y;
+        float smallH = Game1.smallFont.MeasureString("T").Y;
+        float descY = this.cardY + titleH + (string.IsNullOrEmpty(this.categoryName) ? 0 : smallH) + 36;
+        this.AddWords(this.body, new Vector2(this.cardX + 16, descY), Game1.smallFont);
     }
 
     private void AddWords(string text, Vector2 origin, SpriteFont font)
@@ -116,26 +115,15 @@ public class KnowledgeCardMenu : IClickableMenu
             Color.Black * 0.65f
         );
 
-        // 原生 Tooltip 风格卡片
-        IClickableMenu.drawTextureBox(
-            b,
-            Game1.menuTexture,
-            new Rectangle(0, 256, 60, 60),
-            this.cardRect.X,
-            this.cardRect.Y,
-            this.cardRect.Width,
-            this.cardRect.Height,
-            Color.White,
-            1f,
-            drawShadow: false
-        );
-
-        // 标题
-        b.DrawString(Game1.dialogueFont, this.title, this.titlePos, Game1.textColor);
-
-        // 正文（换行）
-        string wrapped = Game1.parseText(this.body, Game1.smallFont, this.cardRect.Width - 32);
-        b.DrawString(Game1.smallFont, wrapped, this.bodyPos, Game1.textColor);
+        // 重放原生 Tooltip（完整内容：标题/类别/描述/增益/价格），固定坐标
+        if (this.tooltipMethod != null && this.tooltipArgs != null)
+        {
+            object[] args = (object[])this.tooltipArgs.Clone();
+            args[0] = b;              // 用当前 SpriteBatch
+            args[13] = this.cardX;    // overrideX
+            args[14] = this.cardY;    // overrideY
+            this.tooltipMethod.Invoke(null, args);
+        }
 
         // 悬浮查词气泡
         this.UpdateHover();
@@ -154,7 +142,8 @@ public class KnowledgeCardMenu : IClickableMenu
             );
         }
 
-        this.upperRightCloseButton?.draw(b);
+        // 自定义菜单必须自己画光标
+        this.drawMouse(b);
     }
 
     private void UpdateHover()
