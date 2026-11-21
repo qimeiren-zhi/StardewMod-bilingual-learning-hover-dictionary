@@ -16,7 +16,7 @@ namespace BilingualLearning;
 /// </summary>
 public class KnowledgeCardMenu : IClickableMenu
 {
-    private const int IconOffset = 56;
+    private const int IconOffset = 112;
 
     private readonly MethodInfo? tooltipMethod;
     private readonly object[]? tooltipArgs;
@@ -251,5 +251,11 @@ public class KnowledgeCardMenu : IClickableMenu
             return;
         }
         base.receiveKeyPress(key);
+    }
+
+    /// <summary>气泡可能绘制在卡片矩形之外，必须始终接收点击（否则触发不到星标）。</summary>
+    public override bool isWithinBounds(int x, int y)
+    {
+        return true;
     }
 }

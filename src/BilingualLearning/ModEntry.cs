@@ -93,13 +93,25 @@ public class ModEntry : Mod
         }
 
         // 捕获卡片重放期间所有 DrawString 文本的位置（用于全文字悬浮查词）
-        var drawStringMethod = AccessTools.Method(typeof(SpriteBatch), "DrawString", new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color) });
-        if (drawStringMethod != null)
+        var drawStringSignatures = new[]
         {
-            harmony.Patch(
-                original: drawStringMethod,
-                postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawString))
-            );
+            // 4 参数 string（drawHoverText 的标题）
+            new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color) },
+            // 9 参数 string（Utility.drawTextWithShadow：类别/增益/价格）
+            new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color), typeof(float), typeof(Vector2), typeof(float), typeof(SpriteEffects), typeof(float) },
+            // 4 参数 StringBuilder（Item.drawTooltip：物品描述）
+            new[] { typeof(SpriteFont), typeof(System.Text.StringBuilder), typeof(Vector2), typeof(Color) }
+        };
+        foreach (var signature in drawStringSignatures)
+        {
+            var method = AccessTools.Method(typeof(SpriteBatch), "DrawString", signature);
+            if (method != null)
+            {
+                harmony.Patch(
+                    original: method,
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawStringArgs))
+                );
+            }
         }
 
         // F11/F9 快捷键
@@ -149,15 +161,23 @@ public class ModEntry : Mod
         return null;
     }
 
-    private static void AfterDrawString(object[] __args)
+    private static void AfterDrawStringArgs(object[] __args)
     {
-        if (!TooltipTextCapture.Capturing || __args.Length < 4)
+        if (!TooltipTextCapture.Capturing || __args.Length < 3)
         {
             return;
         }
-        var font = __args[0] as SpriteFont;
-        var text = __args[1] as string;
-        if (font != null && text != null && __args[2] is Vector2 pos)
+        if (!(__args[0] is SpriteFont font) || !(__args[2] is Vector2 pos))
+        {
+            return;
+        }
+
+        string? text = __args[1] as string;
+        if (text == null && __args[1] is System.Text.StringBuilder sb)
+        {
+            text = sb.ToString();
+        }
+        if (!string.IsNullOrEmpty(text))
         {
             TooltipTextCapture.Record(font, text, pos);
         }
