@@ -12,7 +12,8 @@ namespace BilingualLearning;
 /// <summary>
 /// 知识卡片菜单（方案 A）：悬停物品时按 F1 打开。
 /// 重放原生 IClickableMenu.drawHoverText（固定坐标）→ 类别/增益/价格与原生一致；
-/// 左侧显示物品图标；卡片外深色蒙版；重新捕获全部文字位置以支持任意文字悬浮查词；气泡星标可点击收藏。
+/// 左侧显示物品图标；卡片外深色蒙版；全文字悬浮查词；气泡星标可点击收藏。
+/// 鼠标进出气泡用「词 ∪ 气泡 ∪ 桥接矩形」连通判定，避免死区。
 /// </summary>
 public class KnowledgeCardMenu : IClickableMenu
 {
@@ -31,10 +32,13 @@ public class KnowledgeCardMenu : IClickableMenu
     private readonly int cardX;
     private readonly int cardY;
     private readonly List<(string Word, Rectangle Rect)> wordRects = new();
+
     private string? hoveredWord;
-    private Rectangle hoveredWordBox;
     private string? hoveredTranslation;
-    private Rectangle lastStarBox;
+    private Rectangle hoveredWordBox;
+    private BubbleLayout bubbleLayout;
+    private Rectangle bridgeRect;
+    private bool hasBubble;
 
     public KnowledgeCardMenu(
         MethodInfo? tooltipMethod,
@@ -104,14 +108,14 @@ public class KnowledgeCardMenu : IClickableMenu
             this.BuildWordRectsFromCapture();
         }
 
-        // 悬浮查词气泡
+        // 连通判定 + 悬浮查词气泡
         this.UpdateHover();
-        if (this.hoveredWord != null && this.hoveredTranslation != null)
+        if (this.hasBubble && this.hoveredWord != null && this.hoveredTranslation != null)
         {
             bool starred = this.vocabulary?.Contains(this.hoveredWord) ?? false;
-            BubbleLayout layout = BubbleRenderer.Draw(
+            BubbleRenderer.Draw(
                 b,
-                this.hoveredWordBox,
+                this.bubbleLayout,
                 this.hoveredTranslation,
                 starred,
                 this.config,
@@ -119,11 +123,6 @@ public class KnowledgeCardMenu : IClickableMenu
                 this.bubbleDefault,
                 this.bubbleSandy
             );
-            this.lastStarBox = layout.StarBox;
-        }
-        else
-        {
-            this.lastStarBox = Rectangle.Empty;
         }
 
         // 自定义菜单必须自己画光标
@@ -163,14 +162,29 @@ public class KnowledgeCardMenu : IClickableMenu
 
     private void UpdateHover()
     {
+        Point mouse = Game1.getMousePosition();
+
+        // 1. 已有气泡：鼠标仍在「词 ∪ 气泡 ∪ 桥接」内 → 保持（避免进出气泡时消失）
+        if (this.hasBubble)
+        {
+            if (this.hoveredWordBox.Contains(mouse)
+                || this.bubbleLayout.BubbleBox.Contains(mouse)
+                || this.bridgeRect.Contains(mouse))
+            {
+                return;
+            }
+        }
+
+        // 2. 查找新词
+        this.hasBubble = false;
         this.hoveredWord = null;
         this.hoveredTranslation = null;
+        this.bridgeRect = Rectangle.Empty;
         if (this.dictionary == null)
         {
             return;
         }
 
-        Point mouse = Game1.getMousePosition();
         foreach ((string word, Rectangle rect) in this.wordRects)
         {
             if (!rect.Contains(mouse))
@@ -184,19 +198,44 @@ public class KnowledgeCardMenu : IClickableMenu
                 return;
             }
 
-            this.hoveredWord = normalized;
-            this.hoveredWordBox = rect;
-            this.hoveredTranslation = string.IsNullOrEmpty(entry.Pos)
+            string translation = string.IsNullOrEmpty(entry.Pos)
                 ? entry.Translation
                 : $"{entry.Pos} {entry.Translation}";
+
+            this.hoveredWord = normalized;
+            this.hoveredTranslation = translation;
+            this.hoveredWordBox = rect;
+            this.bubbleLayout = BubbleRenderer.ComputeLayout(rect, translation, this.chineseFont);
+            this.bridgeRect = ComputeBridge(rect, this.bubbleLayout.BubbleBox);
+            this.hasBubble = true;
             return;
         }
+    }
+
+    /// <summary>桥接矩形：覆盖单词与气泡之间的 4px 间隙（气泡可能在下方或上方）。</summary>
+    private static Rectangle ComputeBridge(Rectangle wordBox, Rectangle bubbleBox)
+    {
+        int left = Math.Max(wordBox.X, bubbleBox.X);
+        int right = Math.Min(wordBox.Right, bubbleBox.Right);
+        int width = right - left;
+        if (width <= 0)
+        {
+            return Rectangle.Empty;
+        }
+
+        if (bubbleBox.Top >= wordBox.Bottom)
+        {
+            int h = bubbleBox.Top - wordBox.Bottom;
+            return h > 0 ? new Rectangle(left, wordBox.Bottom, width, h) : Rectangle.Empty;
+        }
+        int h2 = wordBox.Top - bubbleBox.Bottom;
+        return h2 > 0 ? new Rectangle(left, bubbleBox.Bottom, width, h2) : Rectangle.Empty;
     }
 
     public override void receiveLeftClick(int x, int y, bool playSound = true)
     {
         // 点击气泡星标 → 收藏/取消
-        if (this.hoveredWord != null && !this.lastStarBox.IsEmpty && this.lastStarBox.Contains(x, y))
+        if (this.hasBubble && this.hoveredWord != null && this.bubbleLayout.StarBox.Contains(x, y))
         {
             this.ToggleStar();
             return;
