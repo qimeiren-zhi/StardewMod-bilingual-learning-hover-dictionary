@@ -158,5 +158,13 @@
 - **原因**：避免重蹈备份分支「全局接管点击」导致交互冲突的覆辙；也让每个新文本面可以独立验收。
 - **影响文件**：`ExtendedTextOverlay.cs`、`ModEntry.cs`。
 
+## 决策 19：商店 tooltip 不接管，物品描述用 F1 知识卡片间接查词
+
+- **背景**：阶段 3b-4 接入 `ShopMenu` 时，正文（物品名/价格/以物易物数量/缺货提示）都是像素字体 `SpriteText.drawString`，可复用现有捕获与布局；但物品**描述与售价**只存在于 `IClickableMenu.drawHoverText`/`drawToolTip`（`ShopMenu.draw` 内 1 处 `drawHoverText` + 2 处 `drawToolTip`），且背包格 tooltip 与商店 tooltip 同屏并存。要把 tooltip 纳入查词，需要额外的捕获路径（重放/Hook `drawHoverText`）与命中容器，属于架构性改动，而非「白名单一行」。
+- **决策**：商店**只做正文**查词；tooltip（物品描述/售价/背包格）**不接管**。需要查物品描述时，用户按 `F1` 打开知识卡片，卡片内描述走既有 `TooltipTextCapture` 路径可查词（用户已确认此替代路径可接受）。
+- **原因**：① 收益低——tooltip 描述本可通过 F1 卡片查到，重复实现一次悬停查词边际收益小；② 风险高——tooltip 每帧随鼠标重绘，捕获矩形与鼠标位置重合，易出现「气泡压 tooltip / 悬停即抖」；且需新增 Hook 或改动捕获闸门，可能回归对话/卡片路径；③ 已有替代路径——F1 知识卡片对任何物品都能重放原生 tooltip 并查词。
+- **影响**：`ExtendedTextOverlay.AllowedMenus` 只加 `ShopMenu`（正文）；商店 tooltip、背包 tooltip、`TooltipTextCapture`、`ModEntry` 的 `drawHoverText` Hook 均**零改动**；`ExtendLookup=Off` 时行为与之前完全一致。
+- **替代方案及否决原因**：在商店内捕获 `drawHoverText`/`drawToolTip` 的绘制文本（复用 `TooltipTextCapture`）→ 否决：需要新的 Hook/捕获路径 + 与商店 tooltip 的绘制顺序/光标重绘协调，且会与背包格 tooltip 同屏产生双 tooltip 冲突，超出本阶段范围。
+
 
 

@@ -87,16 +87,31 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE
+STAGE: 3b-4
+SUMMARY: 将 ShopMenu 加入 ExtendedTextOverlay.AllowedMenus，商店正文（物品名/价格/以物易物数量/缺货提示）复用现有像素字体捕获与词布局即可悬停查词；tooltip 路径（drawHoverText/drawToolTip、TooltipTextCapture、背包格）零改动，长期决策记录为 DECISIONS #19（描述改由 F1 知识卡片间接查词）。构建 0 error（未部署），diff 仅两文件。
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 追加 typeof(ShopMenu)，类注释补 3b-4 与「tooltip 不接管」
+- docs/ai/DECISIONS.md — 追加决策 19（不接管商店 tooltip，走 F1 卡片）
+- docs/ai/stages/stage-3b-4.md — 本报告（§2）
 VERIFY:
-DECISIONS:
-PITFALLS:
+- build: 0 error（`-p:EnableModDeploy=false`，仅 1 条既有 CS9057 警告；**未部署**，游戏运行中只编译）
+- checks: `git diff --stat` = 2 文件（ExtendedTextOverlay.cs 5 行、DECISIONS.md +8/-0），⊆ IN_SCOPE；旧白名单 7 类型（LetterViewerMenu/QuestLog/SpecialOrdersBoard/CarpenterMenu/Billboard/ShippingMenu/ItemListMenu）全部保留；IsEnabled/ShouldCapture/BuildSpriteFontHits/TextCapture/RebuildWordRects 均无 diff（Off 零行为变化）；未改 manifest/csproj/版本号/dist/bin/obj/references，未动 tooltip/ModEntry/TextCapture
+- user_tests:
+  1. 任意商店悬停商品名 → 出词性+中文释义气泡；移入气泡不消失；气泡显示时点击商品仍能购买（只读、不吞点击）。
+  2. 悬停价格数字 / 以物易物 "xN" 数量 → 不出气泡或仅出可查词气泡，均不遮挡导致无法购买。
+  3. 切换商店分类页签（或换一家商店）→ 旧气泡不残留，新页物品名可查词。
+  4. 悬停背包物品（tooltip）→ 不出现查词气泡（本阶段不接管 tooltip）；按 F1 仍可打开知识卡片查描述。
+  5. GMCM 关闭 Extended lookup → 商店不出气泡；对话/F1 卡片/信件/任务日志/订单板/木匠/任务板/日历/发货箱结算/丢物列表与此前一致。
+DECISIONS: 新增 #19「商店 tooltip 不接管，物品描述用 F1 知识卡片间接查词」（背景/决策/原因/影响/替代方案）。
+PITFALLS: none（未出现新可复现坑；BUG_PATTERNS 未改）
 RISKS:
-DOCS:
-NEXT_READY:
+- 商店 draw 内的 drawHoverText/drawToolTip 仍走通用 SpriteBatch.DrawString Hook，理论上 tooltip 文本可能被捕获成词矩形并落在菜单矩形内（与木匠/任务板同构风险）；未做针对性排除（属 OUT_OF_SCOPE），实机若出现「悬停 tooltip 也出气泡」按设计不改，仅记录。
+- 价格数字/数量不可查属预期（词典无数字条目）；物品名带 " xN" 后缀时仅单词部分命中，未实测。
+- ShopMenu 无滚动；页签切换残留依赖每帧「原词仍存在」校验，通用逻辑已覆盖但未实机验证。
+- 本次构建未部署，游戏内验证需主控带部署重建后再测。
+DOCS: docs/ai/DECISIONS.md #19；docs/ai/stages/stage-3b-4.md §2（本报告）。
+NEXT_READY: yes — 待评审 + 用户实机验收（5 条）。
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
