@@ -230,6 +230,19 @@ public class ExtendedTextOverlay
         }
     }
 
+    /// <summary>
+    /// 光标是否落在释义气泡内（含词矩形与桥接矩形）。
+    /// 供菜单侧吞掉点击使用，避免「气泡盖住商品行时点击穿透、误购下一行商品」。
+    /// </summary>
+    public bool IsPointerOnBubble(int x, int y)
+    {
+        var point = new Point(x, y);
+        return this.HasBubble
+            && (this.bubbleLayout.BubbleBox.Contains(point)
+                || this.hoveredWordBox.Contains(point)
+                || this.bridgeRect.Contains(point));
+    }
+
     private bool IsEnabled()
     {
         if (this.config.ExtendLookup != "On" || !IsEnglish())

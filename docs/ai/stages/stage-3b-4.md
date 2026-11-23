@@ -116,11 +116,11 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE
-STAGE: 3b-4（修复轮 1：用户实机打回后修 A/B 两处）
-SUMMARY: 白名单接入本身通过；修复轮 1 解决两个商店专属问题——A) `ShopMenu.draw` 在物品 tooltip 之后又为店长问候语调用 `drawHoverText`，覆盖了 `AfterDrawHoverText` 的单一缓存，导致 F1 打开问候语卡片，现改为「商店内非 Item tooltip 不覆盖缓存」；B) Joja 商店气泡盖光标，`ExtendedTextOverlay.DrawCursor` 改为 `drawMouse(b, ignore_transparency: true, Game1.mouseCursor)`。构建 0 error（未部署），本轮 diff 仅 `ModEntry.cs` + `ExtendedTextOverlay.cs` + 本文档。
+STAGE: 3b-4（修复轮 1：A 问候语覆盖 tooltip / B 光标层级；修复轮 2：气泡区域吞左键）
+SUMMARY: 白名单接入本身通过。修复轮 1：A) `ShopMenu.draw` 在物品 tooltip 之后又为店长问候语调用 `drawHoverText`，覆盖了 `AfterDrawHoverText` 的单一缓存，导致 F1 打开问候语卡片，现改为「商店内非 Item tooltip 不覆盖缓存」；B) Joja 商店气泡盖光标，`DrawCursor` 改为 `drawMouse(b, ignore_transparency: true)`（走默认 cursor 选择）。修复轮 2：气泡盖住商品行时点击会穿透误购，新增 `ShopMenu.receiveLeftClick` prefix，命中 `IsPointerOnBubble`（气泡 ∪ 词 ∪ 桥接）即吞掉。构建 0 error（未部署）。
 FILES:
-- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 追加 typeof(ShopMenu)（首轮）+ 类注释；修复轮：`DrawCursor` 显式 ignore_transparency/光标编号，并加 F10 下每气泡一次的 `[诊断] cursor` 日志
-- src/BilingualLearning/ModEntry.cs — 修复轮：`AfterDrawHoverText` 在 `ShopMenu` 且 `__args[9] is not Item` 时直接 return，保留物品 tooltip 缓存
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 追加 typeof(ShopMenu)（首轮）+ 类注释；修复轮 1：`DrawCursor` 显式 ignore_transparency + F10 下每气泡一次 `[诊断] cursor`；修复轮 2：新增 `public bool IsPointerOnBubble(int x, int y)`
+- src/BilingualLearning/ModEntry.cs — 修复轮 1：`AfterDrawHoverText` 在 `ShopMenu` 且 `__args[9] is not Item` 时 return；修复轮 2：`Entry` 注册 `ShopMenu.receiveLeftClick` prefix（找不到只 Warn）+ prefix `BeforeShopLeftClick`
 - docs/ai/DECISIONS.md — 追加决策 19（不接管商店 tooltip，走 F1 卡片）
 - docs/ai/stages/stage-3b-4.md — 本报告（§2/§5）
 VERIFY:
@@ -129,23 +129,25 @@ VERIFY:
 - checks（修复轮）: diff 仅 `ModEntry.AfterDrawHoverText`（+18/−4，含注释）与 `ExtendedTextOverlay.DrawCursor`/`cursorDiagLogged`（+19/−1）；未改 `TooltipTextCapture`、卡片重放、气泡布局/命中/桥接、捕获闸门、GMCM、manifest/csproj/版本号/dist/bin/obj/references；修复 A 仅对 `ShopMenu` 生效，其它菜单 `AfterDrawHoverText` 行为不变；`__args.Length > 9` 的判断改写为 early-return，语义等价
   - 修复 A 验证方式：阅读 diff 确认忽略条件是 `Game1.activeClickableMenu is ShopMenu && __args[9] is not Item`；商店内物品 tooltip（`__args[9]` 为 `Item`）仍正常缓存 → F1 标题/描述应为商品。
   - 修复 B 验证方式：`DrawCursor` 已改为两参重载 `drawMouse(b, ignore_transparency: true)`（采纳评审建议：第三参不传 `Game1.mouseCursor`，走默认 `cursor=-1` 的 snappy/手柄光标选择逻辑，避免 snappy/手柄模式画错图标）；`Game1.mouseCursorTransparency`/`Game1.options.hardwareCursor` 均 public（构建通过即签名正确）；诊断日志受 `DebugRects` 与 `cursorDiagLogged` 双重闸门，每气泡最多 1 条。
+- checks（修复轮 2）: Mono.Cecil 核实 `StardewValley.Menus.ShopMenu::receiveLeftClick(System.Int32,System.Int32,System.Boolean)` 存在且签名与预期一致；patch 只挂 `ShopMenu` 的 override（不动 `IClickableMenu` 基类，虚拟分派会命中 override）；prefix 返回 `instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true`（无 overlay/无气泡 → true，即放行）；`IsPointerOnBubble` 仅在 `HasBubble` 为真时判区域，`ExtendLookup=Off` 时气泡不建立 → 零影响；未改其它菜单点击路径。
 - user_tests:
-  1. 皮埃尔商店悬停商品 → 按 F1：卡片标题/类别/描述 = 该商品（不再是店长问候语）；再悬停另一个商品按 F1 应切换为新商品。
-  2. Joja 商店悬停商品名出气泡后把鼠标移入气泡 → 光标完整可见、不被气泡遮住；仍可移回商品并点击购买。
-  3. 商店悬停背包内物品（tooltip）按 F1 → 打开的是该背包物品卡片（非商店问候语）；其它菜单（对话/信件/任务日志/任务板）F1 行为与此前一致。
-  4. 商店悬停商品名 → 出词性+中文释义气泡；移入气泡不消失；气泡显示时点击商品仍能购买。
-  5. GMCM 关闭 Extended lookup → 商店不出气泡、F1 仍可开物品卡片；切页签/换店旧气泡不残留。
+  1. 商店悬停商品名出气泡 → 光标移入气泡并左键点击：不购买、不触发气泡下方商品行（重点复测上一行/下一行）；气泡仍显示。
+  2. 气泡外（商品名/商品图标/空白）左键：与原生一致，能正常购买/切换页签；移出气泡后点击仍正常。
+  3. 皮埃尔商店悬停商品按 F1：卡片 = 该商品（A 复测）；Joja 气泡上光标完整可见（B 复测）。
+  4. GMCM 关闭 Extended lookup → 商店无气泡、点击完全走原生；其它菜单（信件/任务日志/任务板/木匠/对话）点击行为不变。
 DECISIONS: 新增 #19「商店 tooltip 不接管，物品描述用 F1 知识卡片间接查词」（背景/决策/原因/影响/替代方案）。
 PITFALLS: 新坑（暂记本文件，未改 BUG_PATTERNS——本轮 IN_SCOPE 未含）：商店「最后一次 tooltip 缓存」被店长问候语覆盖 → F1 打开问候语卡片；根因是 `ShopMenu.draw` 在物品 tooltip 之后又调用 `drawHoverText(portraitPersonDialogue)`（IL_0C80），而 `AfterDrawHoverText` 只保留最后一次参数；修法是在 `ShopMenu` 下忽略 `__args[9] is not Item` 的调用。关键词：`drawHoverText` `portraitPersonDialogue` `__args[9]` `lastTooltipArgs` `问候语`。
 RISKS:
+- 修复轮 2 只在 `ShopMenu` 吞点击（用户明确本轮只封商店，其它扩展面留阶段 5 统一做）；信件/任务日志/订单板/木匠/任务板的同类穿透仍存在，属已知范围外。
+- 吞点击只看「当前气泡区域」，若气泡在点击前一刻因移出词/翻页被清空，点击会落回原生路径（正常语义，但极端时序下可能漏吞一次）。
 - 修复 A 的副作用：在商店内若尚未悬停任何物品（无物品 tooltip、仅有问候语被忽略），F1 会沿用「上一处缓存的 tooltip」（可能是先前菜单/背包物品）。这是「F1 用上一帧 tooltip」既有语义，非本轮回归；用户测试按「先悬停商品再 F1」覆盖。
 - 商店 draw 内的 drawHoverText/drawToolTip 仍走通用 SpriteBatch.DrawString Hook，理论上 tooltip 文本可能被捕获成词矩形并落在菜单矩形内（与木匠/任务板同构风险）；未做针对性排除（属 OUT_OF_SCOPE），实机若出现「悬停 tooltip 也出气泡」按设计不改，仅记录。
-- 修复 B 为「显式 ignore_transparency + 指定光标编号」的加固；若 Joja 仍复现，需按 F10 `[诊断] cursor` 行（menu/transparency/cursor/hardwareCursor）再定位，本轮未实机确认。
+- 修复 B 为「显式 ignore_transparency」的加固；若 Joja 仍复现，需按 F10 `[诊断] cursor` 行（menu/transparency/cursor/hardwareCursor）再定位。
 - 价格数字/数量不可查属预期（词典无数字条目）；物品名带 " xN" 后缀时仅单词部分命中，未实测。
 - ShopMenu 无滚动；页签切换残留依赖每帧「原词仍存在」校验，通用逻辑已覆盖但未实机验证。
 - 本次构建未部署，游戏内验证需主控带部署重建后再测。
 DOCS: docs/ai/DECISIONS.md #19；docs/ai/stages/stage-3b-4.md §2/§5（本报告）。
-NEXT_READY: yes — 修复轮 1 完成，待评审 + 用户复测（5 条）。
+NEXT_READY: yes — 修复轮 2 完成，待评审 + 用户复测（4 条）。
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
@@ -172,5 +174,9 @@ EVIDENCE:
   - 症状：皮埃尔商店悬停商品按 F1，卡片标题/描述是店长问候语而非商品。
   - 根因：`ShopMenu.draw` 顺序 = 物品 tooltip（drawToolTip→drawHoverText，`__args[9]` 是 Item）→ base.draw → 头像/问候框 → `drawHoverText(portraitPersonDialogue)` IL_0C80；`AfterDrawHoverText` 只存最后一次调用。
   - 修法：`ShopMenu` 内 `__args[9] is not Item` 时 return，不覆盖缓存（只影响商店；Joja 无问候语不受影响）。
-- 新增现象（未修，记录）：Joja 气泡盖光标 → `DrawCursor` 改为 `drawMouse(b, ignore_transparency: true, Game1.mouseCursor)`；F10 下每气泡输出一次 `[诊断] cursor`（menu/transparency/cursor/hardwareCursor）。
-- 未覆盖场景：tooltip 文本是否会被通用 DrawString Hook 捕获成可查词矩形（未实测）；商店内无物品 hover 时 F1 会沿用旧缓存。
+- 新增现象（已修，修复轮 1/2）：
+  - Joja 气泡盖光标 → `DrawCursor` 改为 `drawMouse(b, ignore_transparency: true)`（默认 cursor 选择）；F10 下每气泡输出一次 `[诊断] cursor`（menu/transparency/cursor/hardwareCursor）。
+  - **气泡盖住商品行时点击穿透 → 误购下一行**（修复轮 2）：扩展面此前只读、不拦截点击；商店行是 `forSaleButtons`，气泡区域没有点击归属。修法：`ShopMenu.receiveLeftClick` 加 Harmony prefix，`IsPointerOnBubble`（气泡 ∪ 词 ∪ 桥接）命中则 return false 吞掉；`ExtendLookup=Off` 无气泡 → 零影响；其它菜单点击不动（阶段 5 统一）。
+    - 关键词：`receiveLeftClick` `IsPointerOnBubble` `BeforeShopLeftClick` `吞点击` `误购` `forSaleButtons`。
+    - Cecil 签名：`StardewValley.Menus.ShopMenu::receiveLeftClick(System.Int32,System.Int32,System.Boolean)`（须挂 override；`IClickableMenu` 基类 patch 会被虚拟分派绕过）。
+- 未覆盖场景：tooltip 文本是否会被通用 DrawString Hook 捕获成可查词矩形（未实测）；商店内无物品 hover 时 F1 会沿用旧缓存；其它扩展面的点击穿透留阶段 5。

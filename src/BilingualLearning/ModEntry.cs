@@ -87,6 +87,24 @@ public class ModEntry : Mod
             prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeClick))
         );
 
+        // 3b-4: 商店气泡吞点击（否则气泡盖住商品行时点击会穿透、误购下一行）
+        var shopLeftClick = AccessTools.Method(
+            typeof(ShopMenu),
+            nameof(ShopMenu.receiveLeftClick),
+            new[] { typeof(int), typeof(int), typeof(bool) }
+        );
+        if (shopLeftClick != null)
+        {
+            harmony.Patch(
+                original: shopLeftClick,
+                prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeShopLeftClick))
+            );
+        }
+        else
+        {
+            this.Monitor.Log("未找到 ShopMenu.receiveLeftClick，商店气泡上的点击会穿透到商品行", LogLevel.Warn);
+        }
+
         // S3: 气泡覆盖层绘制
         helper.Events.Display.RenderedActiveMenu += this.OnRenderedActiveMenu;
 
@@ -437,6 +455,12 @@ public class ModEntry : Mod
     private static bool BeforeClick(DialogueBox __instance, int x, int y)
     {
         return instance?.overlay.OnClick(__instance, x, y) ?? true;
+    }
+
+    /// <summary>商店左键 prefix：点在释义气泡（含词/桥接）内时吞掉点击，避免穿透到商品行。</summary>
+    private static bool BeforeShopLeftClick(int x, int y)
+    {
+        return instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true;
     }
 
     private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)
