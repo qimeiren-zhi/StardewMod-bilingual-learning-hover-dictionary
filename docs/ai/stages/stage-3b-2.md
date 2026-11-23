@@ -84,16 +84,28 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE
+STAGE: 3b-2
+
+SUMMARY: Billboard 加入 ExtendedTextOverlay.AllowedMenus（一行白名单 + 类注释同步 3b-2），复用既有 SpriteFont 捕获/多行布局/≤4px 去重/菜单矩形裁剪，无新增 hook、未改闸门。构建 0 error（EnableModDeploy=false，未部署）。日历分支与其它文本面行为不变，ExtendLookup=Off 时零行为变化。
+
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 增 typeof(Billboard)；类注释补「阶段3b-2：小镇任务板/日历（Billboard）」
+- docs/ai/stages/stage-3b-2.md — 本报告（§2）
+
 VERIFY:
-DECISIONS:
-PITFALLS:
-RISKS:
-DOCS:
-NEXT_READY:
+- build: 0 error（1 warning CS9057 已知无害）；命令 dotnet build -c Debug -p:EnableModDeploy=false；游戏运行中 → 只编译未部署
+- checks: 源码 diff = 1 文件（3+/2-，语义改动仅 1 个类型条目 + 1 行注释），分支 diff = 2 文件（源码 + 本报告）；白名单保留 LetterViewerMenu/QuestLog/SpecialOrdersBoard/CarpenterMenu；diff 不含 IsAllowedMenu/ShouldCapture/IsEnabled/RebuildWordRects/BuildSpriteFontHits/TextCapture；未动 manifest/csproj/版本号/bin/obj/dist/references
+- user_tests: ① 任务板有张贴任务时打开公告板 → 悬停任务描述里的单词出词性+中文释义气泡，移入气泡不消失 ② 长描述靠下的词 → 气泡不长期遮挡底部 Accept Quest；移到按钮上气泡消失、按钮可点 ③ 接下任务或换一天重开公告板 → 旧气泡不残留、新描述可查词 ④ 打开日历模式 → 悬停季节名/Year 文本正常出气泡（未收录词按 F13 不出），无错位/崩溃 ⑤ 关闭 Extended lookup → 公告板与日历都不出气泡；对话/F1 卡片/信件/任务日志/订单板/木匠菜单与之前一致
+
+DECISIONS: none（复用 决策 18「白名单 + 只读气泡」，无新长期决策）
+
+PITFALLS: none（本阶段未踩新坑；任务描述被 Utility.drawTextWithShadow 阴影重复绘制，由 19 号坑的 ≤4px 去重既定处理）
+
+RISKS: 未实机验证（只编译未部署）。已知且可接受：长任务描述文字可能压到底部 Accept Quest 按钮，气泡为只读、不拦截点击（按钮仍可点），视觉遮挡属预期。日历分支与任务板共用同一类型，故白名单同时启用两者（日历正文少，仅季节名/Year/日号贴图；日号烘在贴图里无文本可查）。drawHoverText（生日/事件提示）本阶段按设计不接管；奖励 "x1" 走既有 SpriteText 路径被正常捕获，单词无查词价值，未专门验证。
+
+DOCS: docs/ai/stages/stage-3b-2.md §2；未追加 DECISIONS/BUG_PATTERNS
+NEXT_READY: yes — 可进评审 + 带部署构建 + 用户实机 5 条
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
