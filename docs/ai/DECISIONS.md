@@ -82,3 +82,81 @@
 - **决策**：`LocalizedContentManager.CurrentLanguageCode == LanguageCode.en` 才启用（`WordOverlay.cs` `IsEnglish`）。
 - **原因**：非英文游戏下查词无意义（且中文/其它字体布局不同）。
 - **影响文件**：`WordOverlay.cs`。
+
+## 决策 11：气泡 0 延迟隐藏（不实现「延迟 N 秒」）
+
+- **背景**：冻结需求 F5 / §3.3 要求鼠标同时离开单词与气泡后延迟 N 秒隐藏。
+- **决策**：改为**立即隐藏（0 延迟）**，靠「词 ∪ 气泡 ∪ 桥接矩形」连通判定避免误消失（`WordOverlay.cs` 连通判定 + `ComputeBubbleLayout`；卡片为 `KnowledgeCardMenu.ComputeBridge`）。
+- **原因**：4px 间隙已被桥接矩形覆盖，实测无闪烁；延迟只会让气泡在屏幕上残留，反而碍眼。
+- **影响文件**：`WordOverlay.cs`、`KnowledgeCardMenu.cs`、需求文档 §9-2。
+- **替代方案及否决原因**：可配置延迟 → 配置项膨胀且默认值难定，暂不做。
+
+## 决策 12：气泡背景用自制 PNG，而非对话九宫格
+
+- **背景**：冻结需求 §3.6 要求复用 `LooseSprites/dialogueBox` 九宫格纹理。
+- **决策**：改用 `assets/bubble_default.png` / `bubble_sandy.png`，仍用 `IClickableMenu.drawTextureBox` 九宫格绘制；游戏 `mouseCursors` 纹理保留为加载失败时的回退（`WordOverlay.cs` `Draw`）。
+- **原因**：对话纹理为深色底，深色中文释义对比度不足；自制浅色纸张底更易读，并支持 `BubbleStyle` 双风格。
+- **影响文件**：`WordOverlay.cs`、`BubbleRenderer.cs`、`assets/bubble_*.png`、需求文档 §9-3。
+
+## 决策 13：不实现 Alt+点击触发
+
+- **背景**：冻结需求 F1 要求「hover + Alt+点击」，二者可分别开关。
+- **决策**：**仅 hover**，Alt+点击本期不做。
+- **原因**：hover 已覆盖全部查词场景；Alt+点击需额外拦截点击并判断修饰键，与「星标点击吞掉」「翻页/跳过打字机」的点击分层冲突，收益低。
+- **影响文件**：需求文档 §9-1。
+- **替代方案及否决原因**：用 `Suppress` 再判修饰键 → 与现有 `BeforeClick` 吞点击逻辑耦合，易引入翻页 bug。
+
+## 决策 14：MinimumGameVersion 收紧到 1.6.15
+
+- **背景**：实现依赖游戏私有字段 `Game1._activeClickableMenu`（反射）与 `drawHoverText` 参数索引 0/13/14 的重放。
+- **决策**：manifest `MinimumGameVersion` 由 `1.6.0` → `1.6.15`。
+- **原因**：旧版本未实测，私有字段/签名可能不同，宁可拒绝加载也不静默失效。
+- **影响文件**：`manifest.json`、`docs/planning/开发计划与节点控制.md` §9。
+- **注意**：`dist/` 内 0.5.0 发布包仍是旧 manifest，发布前必须重新打包。
+
+## 决策 15：文本面扩展「按文本面切片」，不按绘制 API 分阶段
+
+- **背景**：原计划 §8.4 按「阶段2 SpriteText → 阶段3 SpriteFont → 打磨」推进，备份分支（`807c988`）据此重写并回滚。
+- **决策**：
+  - 先建**统一每帧文本注册表**（`SpriteText.drawString` + 4 个 `SpriteBatch.DrawString` 重载），再按文本面逐个交付：信件 → 任务日志/订单板 → 菜单长尾 → 世界层 → 交互；
+  - `WordOverlay` / `KnowledgeCardMenu` 保持原路径，只把词布局抽成共享纯函数；
+  - 新文本面白名单启用（GMCM 默认关），不全局接管点击。
+- **原因（Mono.Cecil 实测）**：
+  - `QuestLog`、`ShopMenu`、`JunimoNoteMenu`、`LetterViewerMenu` 同一菜单混用两种 API，按 API 切会导致重复实现；
+  - `SpriteBatch.DrawString` 全游戏只有 4 个重载（第 4 个尚缺 hook），SpriteFont 面并不构成独立阶段；
+  - HUD toast 是 `Utility.drawTextWithShadow`（SpriteFont）、电视是 `Game1.drawObjectDialogue`（DialogueBox，已覆盖），原清单归属错误。
+- **影响文件**：`docs/planning/开发计划与节点控制.md` §8、`TextCapture.cs`、`ExtendedTextOverlay.cs`、`ModEntry.cs`。
+- **替代方案及否决原因**：逐菜单自绘适配（路线 B）→ 工作随菜单数线性增长；全局点击接管（备份分支做法）→ 与游戏原生交互冲突，已回滚。
+
+## 决策 16：SpriteFont 文本用「行内前缀 MeasureString」定位
+
+- **背景**：扩展文本面的词矩形需要从 `SpriteBatch.DrawString` 的参数重建；最初按「词宽 + 空格宽」累加。
+- **决策**：每个词的位置 = `行首 X + font.MeasureString(该词之前的行内文本).X * scale`，宽度 = `MeasureString(word).X * scale`。
+- **原因（实测）**：MonoGame 的 `MeasureString` 对每个字符都累加 `Spacing` 与左右边距；分段累加会在每个词边界少计 2×`Spacing`（对话字体 `Spacing=-2` → 4px/词），导致矩形逐词右漂、单字母最明显。改用前缀测量后与 `DrawString` 推进一致，误差收敛为字形左留白（约 3px）。
+- **影响文件**：`ExtendedTextOverlay.BuildSpriteFontHits`。
+- **替代方案及否决原因**：`MeasureString(word)+MeasureString(" ")` → 见上，累计漂移；逐字形 hook → 侵入性过大。
+
+## 决策 17：调试键 `F10` 不进 GMCM，只做开发对位工具
+
+- **背景**：扩展文本面需要验证「词矩形是否与实机文字贴合」，但普通玩家不需要看到矩形。
+- **决策**：
+  - `F10`（`DebugTextRectsKey`）只放在 `config.json`，**不注册进 GMCM**；
+  - 开启时绘制半透明矩形，并把捕获行与词矩形写入 SMAPI 日志（`[诊断]` 前缀）；
+  - 关闭且 `ExtendLookup=Off` 时，`TextCapture.Enabled=false`，捕获完全不运行（零开销）；
+  - 只读绘制，不修改游戏状态、不写存档、不新增文件。
+- **原因**：调试 UI 若暴露给玩家容易被误开；而排查对齐问题必须能「看见」矩形。日志走 SMAPI 既有通道，不额外落盘。
+- **影响文件**：`ModConfig.cs`、`ModEntry.cs`、`ExtendedTextOverlay.cs`、`README.md`、`docs/ai/HANDOVER_2026-11-23.md`。
+- **替代方案及否决原因**：把矩形开关放进 GMCM → 误触风险 + 玩家困惑；不提供调试手段 → 每次对齐问题只能靠猜。
+
+## 决策 18：扩展文本面「白名单 + 只读气泡」
+
+- **背景**：阶段 0~2 覆盖信件与任务日志，后续还有订单板/商店/世界层。
+- **决策**：
+  - 只有 `ExtendedTextOverlay.AllowedMenus` 里的菜单类型才捕获与命中；不在白名单时零捕获；
+  - 扩展面只画「词性 + 释义」气泡，**不画星标、不拦截点击**；收藏/交互留到阶段 5 统一做；
+  - 命中矩形裁剪到当前菜单矩形，被 scissor 裁掉的文字不响应。
+- **原因**：避免重蹈备份分支「全局接管点击」导致交互冲突的覆辙；也让每个新文本面可以独立验收。
+- **影响文件**：`ExtendedTextOverlay.cs`、`ModEntry.cs`。
+
+
+

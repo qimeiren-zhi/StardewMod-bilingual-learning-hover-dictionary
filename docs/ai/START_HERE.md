@@ -31,6 +31,7 @@
 | `docs/ai/BUG_PATTERNS.md` | 已修 Bug 模式库（症状→根因→修复→搜索关键词） |
 | `docs/ai/DECISIONS.md` | 架构决策及原因 |
 | `docs/ai/CURRENT_TASK.md` | 当前任务卡 |
+| `docs/ai/HANDOVER_2026-11-23.md` | 2026-11-23 会话归档（扩展文本面：顺序核查、对齐调试、F10 用意、遗留） |
 | `docs/requirements/` | 需求规格说明、资源需求（冻结版） |
 | `docs/planning/` | 开发计划与节点控制（含 §9 版本记录） |
 | `docs/specs/` | 词典数据格式（离线构建 ↔ 运行时数据契约） |

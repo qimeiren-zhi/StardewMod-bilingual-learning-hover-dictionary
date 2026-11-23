@@ -2,37 +2,35 @@
 
 > 本文件描述「当前正在做/刚完成」的任务；新会话若接手，先确认下面「任务」是否仍是当前任务。
 
-- **任务**：生成交接包（AGENTS.md + docs/ai/*），并确认 Git 已回滚到 `0472442` 的基线状态。
-- **范围**：
-  - 只读扫描项目结构、源码、文档；
-  - 创建/更新 `AGENTS.md`、`docs/ai/HANDOFF.md`、`docs/ai/BUG_PATTERNS.md`、`docs/ai/DECISIONS.md`、`docs/ai/CURRENT_TASK.md`；
-  - 确认 git HEAD == `0472442`、工作区干净、发布包存在。
+- **任务**：归档 2026-11-23 会话成果 + 文档同步（**已完成，改动未提交**）。下一任务：阶段 3（特殊订单板 / 菜单长尾）。
+- **本轮交付**：
+  - 阶段 0/1/2 全部实机验证通过：信件、秘密纸条、日志残页、任务日志可悬停查词；
+  - 修复四类对齐问题（前缀 `MeasureString`、阴影去重、`^` 换行、换行原点）；
+  - `F10` 调试键（矩形 + `[诊断]` 日志）落地并写入 README/HANDOFF 说明；
+  - 文档同步：README、CHANGELOG、需求 §9、计划 §8、AGENTS、DECISIONS 16~18、BUG_PATTERNS 18~21、HANDOFF、`HANDOVER_2026-11-23.md`。
+- **状态**：构建 0 error；已部署到游戏（2026-11-23 20:20:27）；`git status` 为 12 改 + 3 新增，**未提交**；`dist/` 未重建。
 - **非范围**：
-  - **不修改业务代码**（`src/` 下任何 .cs / .csproj / manifest.json / assets）；
-  - 不重做其他 Agent 的「阶段2」（`backup/other-agent-807c988`）；
-  - 不执行发布（Nexus/GitHub 上传）。
+  - 不提交、不发布（等用户决定版本与打包时机）；
+  - 不做阶段 3/4/5 的功能；不改 `WordOverlay`/`KnowledgeCardMenu` 既有语义；
+  - 不合并 `backup/other-agent-807c988`。
 - **验收标准**：
-  1. 5 个交接文件存在且内容完整（八项内容覆盖）；
-  2. `git log -1` == `0472442`，`git status --short` 为空；
-  3. `dist\BilingualLearning 0.5.0.zip` 存在；
-  4. 构建可复现（`dotnet build` 0 error，若需要）。
+  1. 文档与源码一致（验收命令、快捷键、配置项、白名单、已知限制）；
+  2. `dotnet build` 0 error；
+  3. 新会话按 HANDOFF 能直接进入阶段 3，无需重新踩本轮四个对齐坑。
 - **相关文件**：
-  - `AGENTS.md`、`docs/ai/HANDOFF.md`、`docs/ai/BUG_PATTERNS.md`、`docs/ai/DECISIONS.md`、`docs/ai/CURRENT_TASK.md`
-  - `src/BilingualLearning/ModEntry.cs`（入口 L34）
-  - `src/BilingualLearning/WordOverlay.cs`（OnHover L55 / Draw L132）
-  - `src/BilingualLearning/KnowledgeCardMenu.cs`（draw L72 / UpdateHover L163）
-  - `src/BilingualLearning/manifest.json`（版本 0.5.0）
-  - `docs/planning/开发计划与节点控制.md`（§9 版本记录）
-- **相似结构检查点**（改代码前先看这些同类实现，避免重复造轮子/漏 hook）：
-  - 气泡渲染：`BubbleRenderer.Draw`（卡片复用）与 `WordOverlay.Draw`（对话自带）两处；
-  - 文本捕获：`TooltipTextCapture`（卡片专用，只在 `Capturing` 时记录）；
-  - 连通判定：`WordOverlay` 的 `bridgeRect` 与 `KnowledgeCardMenu.ComputeBridge` 是同一套思路；
-  - Harmony 补丁集中注册：`ModEntry.cs:58/68/85/110`。
-- **验证命令/日志**：
-  - 构建：`$env:DOTNET_ROOT='C:\Users\zhiqi\dotnet'; C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\BilingualLearning\BilingualLearning.csproj" -c Debug`
-  - 日志：`C:\Users\zhiqi\AppData\Roaming\StardewValley\ErrorLogs\SMAPI-latest.txt`
-  - Git：`git -C "D:\Project\星露谷双语mod" log --oneline -1` / `status --short`
+  - 新增实现：`src/BilingualLearning/{TextCapture,SpriteTextWordLayout,ExtendedTextOverlay}.cs`
+  - 交接：`docs/ai/HANDOFF.md`、`docs/ai/HANDOVER_2026-11-23.md`、`docs/ai/DECISIONS.md`、`docs/ai/BUG_PATTERNS.md`
+  - 用户文档：`README.md`、`CHANGELOG.md`
+- **相似结构检查点**（阶段 3 开工前先看）：
+  - 捕获：`TextCapture.RegisterSpriteText/RegisterSpriteFont`、`ModEntry.ShouldCapture`；
+  - 白名单：`ExtendedTextOverlay.AllowedMenus`（新增文本面只改这里 + 验收）；
+  - 布局：`SpriteTextWordLayout.Build`（像素字体）、`ExtendedTextOverlay.BuildSpriteFontHits`（SpriteFont，前缀测量）；
+  - 裁剪/残留：`RebuildWordRects` 的菜单矩形裁剪 + `IsHoveredWordStillPresent`。
+- **验证命令**：
+  - 构建：`$env:DOTNET_ROOT='C:\Users\zhiqi\dotnet'; C:\Users\zhiqi\dotnet\dotnet.exe build "src\BilingualLearning\BilingualLearning.csproj" -c Debug`
+  - 仅编译：加 `-p:EnableModDeploy=false`（游戏运行时必须加）
+  - 日志：SMAPI 控制台 / `%APPDATA%\StardewValley\ErrorLogs\SMAPI-latest.txt`
 - **风险与回滚**：
-  - 本次只写文档，不改业务代码 → 无构建风险。
-  - 若误改代码：`git -C "D:\Project\星露谷双语mod" checkout -- .` 恢复。
-  - 其他 Agent 的提交在 `backup/other-agent-807c988`，可用 `git diff 0472442..backup/other-agent-807c988` 查看。
+  - 未提交改动可整体 `git checkout -- .` + 删除三个新增文件回滚；
+  - 扩展功能默认关闭，回滚风险仅限开启后的体验；
+  - 部署需关闭游戏（DLL 锁）。
