@@ -50,9 +50,9 @@
 | `src/BilingualLearning/assets/Font.ttf` | 子集字体（15.6MB→2.08MB） | 用字表变化需重新子集化 |
 | `src/BilingualLearning/assets/bubble_default.png` / `bubble_sandy.png` | 双气泡风格 | 只读属性需清除 |
 | `docs/art/*.png` | 原始设计稿归档 | — |
-| `README.md` / `CHANGELOG.md` / `Nexus发布文案.md` | 发布文档、AI 声明 | — |
-| `开发计划与节点控制.md` | 进度 v0.5、§9 版本记录 | — |
-| `开发环境与构建说明.md` | UniqueID 更新 | — |
+| `README.md` / `CHANGELOG.md` / `docs/release/Nexus发布文案.md` | 发布文档、AI 声明 | — |
+| `docs/planning/开发计划与节点控制.md` | 进度 v0.5、§9 版本记录 | — |
+| `docs/guides/开发环境与构建说明.md` | UniqueID 更新 | — |
 | `.gitignore` | 忽略 dist/ | — |
 
 ## 失败尝试/禁止事项

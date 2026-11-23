@@ -22,7 +22,7 @@
   - `src/BilingualLearning/WordOverlay.cs`（OnHover L55 / Draw L132）
   - `src/BilingualLearning/KnowledgeCardMenu.cs`（draw L72 / UpdateHover L163）
   - `src/BilingualLearning/manifest.json`（版本 0.5.0）
-  - `开发计划与节点控制.md`（§9 版本记录）
+  - `docs/planning/开发计划与节点控制.md`（§9 版本记录）
 - **相似结构检查点**（改代码前先看这些同类实现，避免重复造轮子/漏 hook）：
   - 气泡渲染：`BubbleRenderer.Draw`（卡片复用）与 `WordOverlay.Draw`（对话自带）两处；
   - 文本捕获：`TooltipTextCapture`（卡片专用，只在 `Capturing` 时记录）；

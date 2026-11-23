@@ -26,12 +26,16 @@ D:\Project\星露谷双语mod\
 │  ├─ BilingualLearning.csproj    # net6.0 + ModBuildConfig
 │  └─ assets\                     # dictionary.tsv / Font.ttf / bubble_*.png
 ├─ tools\                         # 辅助工具（build-dict 等）
-├─ docs\                          # 设计/美术资源
-│  ├─ ai\                         # 本交接包
-│  └─ art\                        # 原始气泡设计稿
+├─ docs\                          # 全部文档（纯文本）
+│  ├─ requirements\               # 需求规格说明、资源需求
+│  ├─ planning\                   # 开发计划与节点控制
+│  ├─ specs\                      # 词典数据格式（离线构建↔运行时数据契约）
+│  ├─ guides\                     # 开发环境与构建说明
+│  ├─ release\                    # Nexus 发布文案
+│  └─ ai\                         # 本交接包
+├─ assets\art\                    # 原始气泡设计稿（二进制）
 ├─ dist\                          # 发布包（gitignore）
-├─ 需求规格说明.md / 资源需求.md / 开发计划与节点控制.md / 词典数据格式.md / 开发环境与构建说明.md
-├─ README.md / CHANGELOG.md / Nexus发布文案.md
+├─ README.md / CHANGELOG.md
 ```
 
 ### 入口文件

@@ -23,7 +23,7 @@
 - **背景**：需要分离词性与释义，并支持专有名词标记。
 - **决策**：`DictionaryData.Load` 解析 4 列（`DictionaryData.cs:62-64`），`Entry` 含 `Pos/Translation/Tag`。
 - **原因**：v1（3 列，词性内嵌释义）无法准确区分词性/义项；v2 由词库搭建侧收敛生成。
-- **影响文件**：`DictionaryData.cs`、`assets/dictionary.tsv`、`词典数据格式.md`。
+- **影响文件**：`DictionaryData.cs`、`assets/dictionary.tsv`、`docs/specs/词典数据格式.md`。
 - **替代方案及否决原因**：运行时用 `ExtractPos/ExtractMeaning` 拆分 → 只能粗略切分，已删除。
 
 ## 决策 4：移除等级过滤
