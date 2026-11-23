@@ -81,16 +81,32 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE_WITH_RISK
+STAGE: 3a   BRANCH: stage/3a-orders-board   COMMITS: 分支 HEAD（本阶段单提交，见 `git log --oneline -1`）
+SUMMARY: 白名单新增 SpecialOrdersBoard 一行（含类注释同步）；捕获闸门与命中逻辑零改动，构建 0 error。未部署（按 Packet 用 EnableModDeploy=false 编译），实机验收前需主控做一次带部署的构建或让用户重装 DLL。无新增决策/新坑。
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 增加 typeof(SpecialOrdersBoard)（1 行）+ 类注释补「阶段3a」（0 行为）
 VERIFY:
-DECISIONS:
-PITFALLS:
+- build: 0 error（仅既有 CS9057 分析器版本警告）；命令 = dotnet build -c Debug -p:EnableModDeploy=false
+- checks:
+  - git diff --stat：仅 ExtendedTextOverlay.cs（3 insertions / 2 deletions），无 bin/obj/dist/版本号
+  - AllowedMenus 仅新增 1 个类型；LetterViewerMenu、QuestLog 保留
+  - 闸门唯一入口：ModEntry.cs:309 与 ExtendedTextOverlay.cs:220 均走 IsAllowedMenu，故一行即覆盖「捕获」与「命中」两侧；ExtendLookup=Off 时 Enabled/ShouldCapture 逻辑未改（diff 不涉及）
+  - 未重写 BuildSpriteFontHits / SpriteTextWordLayout（diff 无相关改动）
+  - 游戏进程未运行（Get-Process 无匹配）；部署目录 DLL 仍为 20:20 旧版本，bin 为新构建 → 确认「未部署」
+- user_tests:
+  1. GMCM 开 Extended lookup → 打开刘易斯家门前的特殊订单板 → 悬停订单描述里的单词 → 出现词性+中文释义气泡；移入气泡不消失
+  2. 对一段多行描述逐行悬停（可开 F10 看绿色矩形）→ 矩形贴合当前词，无逐行右漂/串行
+  3. 左侧切换选中不同订单 → 旧气泡不残留；新订单描述可正常查词
+  4. 关闭 Extended lookup → 订单板不再出气泡；对话、F1 卡片、信件、任务日志行为与之前一致
+DECISIONS: none
+PITFALLS: none
 RISKS:
-DOCS:
-NEXT_READY:
+- 顶部 ChooseOne 横幅（SpriteText scrollType=0）按 EVIDENCE 被 drawBGScroll != -1 闸门跳过，本阶段不接管（预期）
+- 文本若溢出菜单矩形，超出部分被 area 裁剪不可悬停（EVIDENCE 已注明，无裁剪修正）
+- 实机未验证：当前 Mods 目录 DLL 未更新，需先部署再测
+DOCS: docs/ai/stages/stage-3a.md（§2 本报告）；未追加 DECISIONS/BUG_PATTERNS（无新增）
+NEXT_READY: yes — 待主控部署构建 + 用户实机 4 条验收
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
