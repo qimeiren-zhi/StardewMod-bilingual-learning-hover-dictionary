@@ -105,30 +105,36 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE
-STAGE: 3b-4
-SUMMARY: 将 ShopMenu 加入 ExtendedTextOverlay.AllowedMenus，商店正文（物品名/价格/以物易物数量/缺货提示）复用现有像素字体捕获与词布局即可悬停查词；tooltip 路径（drawHoverText/drawToolTip、TooltipTextCapture、背包格）零改动，长期决策记录为 DECISIONS #19（描述改由 F1 知识卡片间接查词）。构建 0 error（未部署），diff 仅两文件。
+STAGE: 3b-4（修复轮 1：用户实机打回后修 A/B 两处）
+SUMMARY: 白名单接入本身通过；修复轮 1 解决两个商店专属问题——A) `ShopMenu.draw` 在物品 tooltip 之后又为店长问候语调用 `drawHoverText`，覆盖了 `AfterDrawHoverText` 的单一缓存，导致 F1 打开问候语卡片，现改为「商店内非 Item tooltip 不覆盖缓存」；B) Joja 商店气泡盖光标，`ExtendedTextOverlay.DrawCursor` 改为 `drawMouse(b, ignore_transparency: true, Game1.mouseCursor)`。构建 0 error（未部署），本轮 diff 仅 `ModEntry.cs` + `ExtendedTextOverlay.cs` + 本文档。
 FILES:
-- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 追加 typeof(ShopMenu)，类注释补 3b-4 与「tooltip 不接管」
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 追加 typeof(ShopMenu)（首轮）+ 类注释；修复轮：`DrawCursor` 显式 ignore_transparency/光标编号，并加 F10 下每气泡一次的 `[诊断] cursor` 日志
+- src/BilingualLearning/ModEntry.cs — 修复轮：`AfterDrawHoverText` 在 `ShopMenu` 且 `__args[9] is not Item` 时直接 return，保留物品 tooltip 缓存
 - docs/ai/DECISIONS.md — 追加决策 19（不接管商店 tooltip，走 F1 卡片）
-- docs/ai/stages/stage-3b-4.md — 本报告（§2）
+- docs/ai/stages/stage-3b-4.md — 本报告（§2/§5）
 VERIFY:
 - build: 0 error（`-p:EnableModDeploy=false`，仅 1 条既有 CS9057 警告；**未部署**，游戏运行中只编译）
-- checks: `git diff --stat` = 2 文件（ExtendedTextOverlay.cs 5 行、DECISIONS.md +8/-0），⊆ IN_SCOPE；旧白名单 7 类型（LetterViewerMenu/QuestLog/SpecialOrdersBoard/CarpenterMenu/Billboard/ShippingMenu/ItemListMenu）全部保留；IsEnabled/ShouldCapture/BuildSpriteFontHits/TextCapture/RebuildWordRects 均无 diff（Off 零行为变化）；未改 manifest/csproj/版本号/dist/bin/obj/references，未动 tooltip/ModEntry/TextCapture
+- checks（首轮）: `git diff --stat` = 2 文件，⊆ IN_SCOPE；旧白名单 7 类型（LetterViewerMenu/QuestLog/SpecialOrdersBoard/CarpenterMenu/Billboard/ShippingMenu/ItemListMenu）全部保留；IsEnabled/ShouldCapture/BuildSpriteFontHits/TextCapture/RebuildWordRects 均无 diff（Off 零行为变化）
+- checks（修复轮）: diff 仅 `ModEntry.AfterDrawHoverText`（+18/−4，含注释）与 `ExtendedTextOverlay.DrawCursor`/`cursorDiagLogged`（+19/−1）；未改 `TooltipTextCapture`、卡片重放、气泡布局/命中/桥接、捕获闸门、GMCM、manifest/csproj/版本号/dist/bin/obj/references；修复 A 仅对 `ShopMenu` 生效，其它菜单 `AfterDrawHoverText` 行为不变；`__args.Length > 9` 的判断改写为 early-return，语义等价
+  - 修复 A 验证方式：阅读 diff 确认忽略条件是 `Game1.activeClickableMenu is ShopMenu && __args[9] is not Item`；商店内物品 tooltip（`__args[9]` 为 `Item`）仍正常缓存 → F1 标题/描述应为商品。
+  - 修复 B 验证方式：`DrawCursor` 已改为三参重载；`Game1.mouseCursor`/`Game1.mouseCursorTransparency`/`Game1.options.hardwareCursor` 均 public（构建通过即签名正确）；诊断日志受 `DebugRects` 与 `cursorDiagLogged` 双重闸门，每气泡最多 1 条。
 - user_tests:
-  1. 任意商店悬停商品名 → 出词性+中文释义气泡；移入气泡不消失；气泡显示时点击商品仍能购买（只读、不吞点击）。
-  2. 悬停价格数字 / 以物易物 "xN" 数量 → 不出气泡或仅出可查词气泡，均不遮挡导致无法购买。
-  3. 切换商店分类页签（或换一家商店）→ 旧气泡不残留，新页物品名可查词。
-  4. 悬停背包物品（tooltip）→ 不出现查词气泡（本阶段不接管 tooltip）；按 F1 仍可打开知识卡片查描述。
-  5. GMCM 关闭 Extended lookup → 商店不出气泡；对话/F1 卡片/信件/任务日志/订单板/木匠/任务板/日历/发货箱结算/丢物列表与此前一致。
+  1. 皮埃尔商店悬停商品 → 按 F1：卡片标题/类别/描述 = 该商品（不再是店长问候语）；再悬停另一个商品按 F1 应切换为新商品。
+  2. Joja 商店悬停商品名出气泡后把鼠标移入气泡 → 光标完整可见、不被气泡遮住；仍可移回商品并点击购买。
+  3. 商店悬停背包内物品（tooltip）按 F1 → 打开的是该背包物品卡片（非商店问候语）；其它菜单（对话/信件/任务日志/任务板）F1 行为与此前一致。
+  4. 商店悬停商品名 → 出词性+中文释义气泡；移入气泡不消失；气泡显示时点击商品仍能购买。
+  5. GMCM 关闭 Extended lookup → 商店不出气泡、F1 仍可开物品卡片；切页签/换店旧气泡不残留。
 DECISIONS: 新增 #19「商店 tooltip 不接管，物品描述用 F1 知识卡片间接查词」（背景/决策/原因/影响/替代方案）。
-PITFALLS: none（未出现新可复现坑；BUG_PATTERNS 未改）
+PITFALLS: 新坑（暂记本文件，未改 BUG_PATTERNS——本轮 IN_SCOPE 未含）：商店「最后一次 tooltip 缓存」被店长问候语覆盖 → F1 打开问候语卡片；根因是 `ShopMenu.draw` 在物品 tooltip 之后又调用 `drawHoverText(portraitPersonDialogue)`（IL_0C80），而 `AfterDrawHoverText` 只保留最后一次参数；修法是在 `ShopMenu` 下忽略 `__args[9] is not Item` 的调用。关键词：`drawHoverText` `portraitPersonDialogue` `__args[9]` `lastTooltipArgs` `问候语`。
 RISKS:
+- 修复 A 的副作用：在商店内若尚未悬停任何物品（无物品 tooltip、仅有问候语被忽略），F1 会沿用「上一处缓存的 tooltip」（可能是先前菜单/背包物品）。这是「F1 用上一帧 tooltip」既有语义，非本轮回归；用户测试按「先悬停商品再 F1」覆盖。
 - 商店 draw 内的 drawHoverText/drawToolTip 仍走通用 SpriteBatch.DrawString Hook，理论上 tooltip 文本可能被捕获成词矩形并落在菜单矩形内（与木匠/任务板同构风险）；未做针对性排除（属 OUT_OF_SCOPE），实机若出现「悬停 tooltip 也出气泡」按设计不改，仅记录。
+- 修复 B 为「显式 ignore_transparency + 指定光标编号」的加固；若 Joja 仍复现，需按 F10 `[诊断] cursor` 行（menu/transparency/cursor/hardwareCursor）再定位，本轮未实机确认。
 - 价格数字/数量不可查属预期（词典无数字条目）；物品名带 " xN" 后缀时仅单词部分命中，未实测。
 - ShopMenu 无滚动；页签切换残留依赖每帧「原词仍存在」校验，通用逻辑已覆盖但未实机验证。
 - 本次构建未部署，游戏内验证需主控带部署重建后再测。
-DOCS: docs/ai/DECISIONS.md #19；docs/ai/stages/stage-3b-4.md §2（本报告）。
-NEXT_READY: yes — 待评审 + 用户实机验收（5 条）。
+DOCS: docs/ai/DECISIONS.md #19；docs/ai/stages/stage-3b-4.md §2/§5（本报告）。
+NEXT_READY: yes — 修复轮 1 完成，待评审 + 用户复测（5 条）。
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
@@ -150,6 +156,10 @@ EVIDENCE:
 
 ## 5. 经验沉淀（可选）
 
-- 新增决策：`DECISIONS #__`
-- 新增坑：`BUG_PATTERNS #__`
-- 未覆盖场景：
+- 新增决策：无（本轮修复不引入新决策；DECISIONS #19 仍适用）
+- 新增坑：**商店店长问候语覆盖 tooltip 缓存**（详见 §2 PITFALLS；待主控复核后决定是否升级为 BUG_PATTERNS #23）
+  - 症状：皮埃尔商店悬停商品按 F1，卡片标题/描述是店长问候语而非商品。
+  - 根因：`ShopMenu.draw` 顺序 = 物品 tooltip（drawToolTip→drawHoverText，`__args[9]` 是 Item）→ base.draw → 头像/问候框 → `drawHoverText(portraitPersonDialogue)` IL_0C80；`AfterDrawHoverText` 只存最后一次调用。
+  - 修法：`ShopMenu` 内 `__args[9] is not Item` 时 return，不覆盖缓存（只影响商店；Joja 无问候语不受影响）。
+- 新增现象（未修，记录）：Joja 气泡盖光标 → `DrawCursor` 改为 `drawMouse(b, ignore_transparency: true, Game1.mouseCursor)`；F10 下每气泡输出一次 `[诊断] cursor`（menu/transparency/cursor/hardwareCursor）。
+- 未覆盖场景：tooltip 文本是否会被通用 DrawString Hook 捕获成可查词矩形（未实测）；商店内无物品 hover 时 F1 会沿用旧缓存。

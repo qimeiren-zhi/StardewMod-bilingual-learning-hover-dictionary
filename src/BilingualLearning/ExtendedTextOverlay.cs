@@ -50,6 +50,9 @@ public class ExtendedTextOverlay
     /// <summary>是否绘制命中矩形（F10 切换，用于实机对位）。</summary>
     public bool DebugRects { get; set; }
 
+    /// <summary>本轮气泡是否已经打印过一次光标诊断（F10 时每个气泡只打一次，避免刷屏）。</summary>
+    private bool cursorDiagLogged;
+
     /// <summary>当前是否正在显示气泡（用于决定是否重绘光标）。</summary>
     public bool HasBubble => this.hasBubble;
 
@@ -212,7 +215,20 @@ public class ExtendedTextOverlay
     /// <summary>气泡画完后重绘菜单光标，确保光标浮在气泡之上。</summary>
     public void DrawCursor(SpriteBatch b)
     {
-        Game1.activeClickableMenu?.drawMouse(b);
+        // 显式忽略 transparency 并指定光标编号：Joja 等商店的菜单光标状态可能让 drawMouse 默认路径画得太淡，
+        // 表现为「光标被气泡盖住」。这里沿用游戏自带的 drawMouse 重载（不自己画纹理）。
+        Game1.activeClickableMenu?.drawMouse(b, ignore_transparency: true, Game1.mouseCursor);
+
+        // 仅在 F10 调试开启时每气泡打印一次光标状态，便于判断是否还有 transparency/硬件光标干扰。
+        if (this.DebugRects && !this.cursorDiagLogged && this.monitor != null)
+        {
+            this.cursorDiagLogged = true;
+            this.monitor.Log(
+                $"[诊断] cursor 菜单={Game1.activeClickableMenu?.GetType().Name} " +
+                $"transparency={Game1.mouseCursorTransparency} cursor={Game1.mouseCursor} " +
+                $"hardwareCursor={Game1.options.hardwareCursor}",
+                LogLevel.Info);
+        }
     }
 
     private bool IsEnabled()
@@ -438,6 +454,7 @@ public class ExtendedTextOverlay
         this.hoveredTranslation = null;
         this.hasBubble = false;
         this.bridgeRect = Rectangle.Empty;
+        this.cursorDiagLogged = false;
     }
 
     private static Rectangle ComputeBridge(Rectangle wordBox, Rectangle bubbleBox)

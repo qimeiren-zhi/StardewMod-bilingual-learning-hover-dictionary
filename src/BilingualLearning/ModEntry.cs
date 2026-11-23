@@ -316,12 +316,22 @@ public class ModEntry : Mod
 
     private static void AfterDrawHoverText(object[] __args)
     {
-        if (__args.Length > 9)
+        if (__args.Length <= 9)
         {
-            lastTooltipBody = __args[1] as string;
-            lastTooltipTitle = __args[6] as string;
-            lastTooltipArgs = (object[])__args.Clone();
+            return;
         }
+
+        // 商店：物品 tooltip（drawToolTip → drawHoverText，参数 9 是 Item）之后，
+        // base.draw 里还会为店长问候语再调用一次 drawHoverText（参数 9 不是 Item）。
+        // 后者会覆盖缓存导致 F1 打开问候语卡片，这里直接忽略非物品 tooltip。
+        if (Game1.activeClickableMenu is ShopMenu && __args[9] is not Item)
+        {
+            return;
+        }
+
+        lastTooltipBody = __args[1] as string;
+        lastTooltipTitle = __args[6] as string;
+        lastTooltipArgs = (object[])__args.Clone();
     }
 
     private void RegisterConfigMenu(IModHelper helper)
