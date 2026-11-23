@@ -86,22 +86,23 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ```text
 STATUS: DONE
 STAGE: 3c   BRANCH: stage/3c-junimo-mastery   COMMITS: 本提交（代码 + 本报告同一提交）
-SUMMARY: ExtendedTextOverlay.AllowedMenus 新增 JunimoNoteMenu、MasteryTrackerMenu 两行并同步类注释；旧 8 个白名单保持原样，无新增 hook。点击吞掉/星标经 SupportedMenus（ModEntry.cs:94）自动覆盖，无需改 ModEntry/TextCapture/布局。构建设置 EnableModDeploy=false、0 error；未实机验证（游戏未运行，且需用户确认）。
+SUMMARY: ExtendedTextOverlay.AllowedMenus 新增 JunimoNoteMenu、MasteryTrackerMenu 两行并同步类注释；旧 8 个白名单保持原样，无新增 hook。点击吞掉/星标经 SupportedMenus（ModEntry.cs:94）自动覆盖，无需改 TextCapture/布局。用户实机反馈后补修复轮：未读 Junimo 文（junimo 乱码字体，`__args[9]`）在 `AfterSpriteTextDrawString` 直接不注册捕获。构建 0 error（EnableModDeploy=false，未部署）。
 FILES:
 - src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 加两行 + 类注释补 3c
+- src/BilingualLearning/ModEntry.cs — 修复轮：`SpriteText.drawString` 的 junimoText 为 true 时不注册捕获
 - docs/ai/stages/stage-3c.md — 填 §2 执行报告
 VERIFY:
 - build: 0 error（1 warning CS9057 无害）；-p:EnableModDeploy=false，未部署
-- checks: git diff --stat 仅上述 2 文件；AllowedMenus 数量 8→10 且旧 8 项逐项保留；ModEntry.cs:94 遍历 SupportedMenus 自动注册点击吞掉
+- checks: git diff --stat 仅上述文件；AllowedMenus 数量 8→10 且旧 8 项逐项保留；ModEntry.cs:94 遍历 SupportedMenus 自动注册点击吞掉；junimo 判断用 `is bool` 且位于长度检查（<12 已 return）之后
 - user_tests:
   1. JunimoNoteMenu：悬停区域名/当前收集包名出气泡，移入气泡不消失
-  2. Junimo 正文（如未读文）：悬停出气泡；乱码/无意义词允许不出
+  2. 未读 Junimo 文（junimo 乱码字体）：悬停**不出**气泡（修复轮行为）
   3. 点收集包名/材料词走原生（捐物/翻页），点气泡空白被吞，点星标收藏/取消正常
   4. MasteryTrackerMenu：悬停奖励名/说明/Claim/下一级 XP 出气泡；点 Claim（气泡外）正常领取
   5. Extended lookup=Off：两菜单不出气泡，其余 8 个白名单菜单行为与 5b 一致
 DECISIONS: none（沿用 DECISIONS 17/19/20，无新长期决策）
-PITFALLS: none（沿用 BUG_PATTERNS #25/#26，白名单式接入未产生新坑）
-RISKS: ① 底部区域奖励名走 drawStringWithScrollCenteredAt（drawBGScroll=+1）被闸门过滤，本阶段明确不接管（需求 §10-2）；② GameMenu Skills 页精通条不在白名单（不能整体白名单 GameMenu），仍不可查；③ 材料名/物品名 tooltip 鼠标锚定，不接管（DECISIONS 19）；④ 未实机验证，悬停位置/裁剪待用户确认。
+PITFALLS: none（沿用 BUG_PATTERNS #25/#26；junimo 字体问题属菜单特例，已就地修复，未升级为通用坑）
+RISKS: ① 底部区域奖励名走 drawStringWithScrollCenteredAt（drawBGScroll=+1）被闸门过滤，本阶段明确不接管（需求 §10-2）；② GameMenu Skills 页精通条不在白名单（不能整体白名单 GameMenu），仍不可查；③ 材料名/物品名 tooltip 鼠标锚定，不接管（DECISIONS 19）；④ **MasteryTrackerMenu 代码已接入但未实机测试（当前存档条件不足），发布前必须补测**；⑤ 未读 Junimo 文按用户要求整体不查词（含其乱码正文）；⑥ 悬停位置/裁剪仅 JunimoNoteMenu 部分经用户确认。
 DOCS: docs/ai/stages/stage-3c.md §2；DECISIONS/BUG_PATTERNS 无追加
 NEXT_READY: yes — 待评审 + 用户实机验收；未合并 master
 ```
@@ -125,6 +126,8 @@ EVIDENCE:
 
 ## 5. 经验沉淀（可选）
 
-- 新增决策：`DECISIONS #__`
-- 新增坑：`BUG_PATTERNS #__`
+- 新增决策：`DECISIONS #__`（本阶段无）
+- 新增坑：`BUG_PATTERNS #__`（本阶段无）
 - 未覆盖场景：
+  1. **MasteryTrackerMenu 未实机测试**（当前存档条件不足：未达精通/洞窟牌匾不可用）——代码已接入，发布前必须用满足条件的存档补测（悬停奖励名/说明/Claim/XP、点 Claim 领取、右键关闭）。
+  2. 未读 Junimo 文（`junimoText: true` 乱码字体）按用户要求整体不参与查词；若将来要支持，需要单独建模其字号/缩放与乱码文本。

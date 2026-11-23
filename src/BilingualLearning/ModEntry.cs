@@ -295,6 +295,12 @@ public class ModEntry : Mod
             return;
         }
 
+        // Junimo 乱码字体（未读文）不参与查词：字号缩放不同会导致命中框偏移，正文本身也是乱码
+        if (__args[9] is bool junimoText && junimoText)
+        {
+            return;
+        }
+
         TextCapture.RegisterSpriteText(text, x, y, characterPosition, width, drawBgScroll);
     }
 
