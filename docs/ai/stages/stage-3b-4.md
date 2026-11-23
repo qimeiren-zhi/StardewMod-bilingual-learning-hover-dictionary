@@ -117,7 +117,7 @@ VERIFY:
 - checks（首轮）: `git diff --stat` = 2 文件，⊆ IN_SCOPE；旧白名单 7 类型（LetterViewerMenu/QuestLog/SpecialOrdersBoard/CarpenterMenu/Billboard/ShippingMenu/ItemListMenu）全部保留；IsEnabled/ShouldCapture/BuildSpriteFontHits/TextCapture/RebuildWordRects 均无 diff（Off 零行为变化）
 - checks（修复轮）: diff 仅 `ModEntry.AfterDrawHoverText`（+18/−4，含注释）与 `ExtendedTextOverlay.DrawCursor`/`cursorDiagLogged`（+19/−1）；未改 `TooltipTextCapture`、卡片重放、气泡布局/命中/桥接、捕获闸门、GMCM、manifest/csproj/版本号/dist/bin/obj/references；修复 A 仅对 `ShopMenu` 生效，其它菜单 `AfterDrawHoverText` 行为不变；`__args.Length > 9` 的判断改写为 early-return，语义等价
   - 修复 A 验证方式：阅读 diff 确认忽略条件是 `Game1.activeClickableMenu is ShopMenu && __args[9] is not Item`；商店内物品 tooltip（`__args[9]` 为 `Item`）仍正常缓存 → F1 标题/描述应为商品。
-  - 修复 B 验证方式：`DrawCursor` 已改为三参重载；`Game1.mouseCursor`/`Game1.mouseCursorTransparency`/`Game1.options.hardwareCursor` 均 public（构建通过即签名正确）；诊断日志受 `DebugRects` 与 `cursorDiagLogged` 双重闸门，每气泡最多 1 条。
+  - 修复 B 验证方式：`DrawCursor` 已改为两参重载 `drawMouse(b, ignore_transparency: true)`（采纳评审建议：第三参不传 `Game1.mouseCursor`，走默认 `cursor=-1` 的 snappy/手柄光标选择逻辑，避免 snappy/手柄模式画错图标）；`Game1.mouseCursorTransparency`/`Game1.options.hardwareCursor` 均 public（构建通过即签名正确）；诊断日志受 `DebugRects` 与 `cursorDiagLogged` 双重闸门，每气泡最多 1 条。
 - user_tests:
   1. 皮埃尔商店悬停商品 → 按 F1：卡片标题/类别/描述 = 该商品（不再是店长问候语）；再悬停另一个商品按 F1 应切换为新商品。
   2. Joja 商店悬停商品名出气泡后把鼠标移入气泡 → 光标完整可见、不被气泡遮住；仍可移回商品并点击购买。

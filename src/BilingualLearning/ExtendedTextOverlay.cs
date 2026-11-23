@@ -215,9 +215,8 @@ public class ExtendedTextOverlay
     /// <summary>气泡画完后重绘菜单光标，确保光标浮在气泡之上。</summary>
     public void DrawCursor(SpriteBatch b)
     {
-        // 显式忽略 transparency 并指定光标编号：Joja 等商店的菜单光标状态可能让 drawMouse 默认路径画得太淡，
-        // 表现为「光标被气泡盖住」。这里沿用游戏自带的 drawMouse 重载（不自己画纹理）。
-        Game1.activeClickableMenu?.drawMouse(b, ignore_transparency: true, Game1.mouseCursor);
+        // 显式忽略 transparency；第三个参数不传，走 drawMouse 默认 cursor=-1 的 snappy/手柄光标选择逻辑。
+        Game1.activeClickableMenu?.drawMouse(b, ignore_transparency: true);
 
         // 仅在 F10 调试开启时每气泡打印一次光标状态，便于判断是否还有 transparency/硬件光标干扰。
         if (this.DebugRects && !this.cursorDiagLogged && this.monitor != null)
