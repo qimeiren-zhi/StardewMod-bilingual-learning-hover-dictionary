@@ -2,6 +2,7 @@
 
 > 生成时间：2026-11-23。基线：`master` @ `0472442`，版本 `0.5.0`，标签 `v0.5.0`。
 > 新会话请先读 `AGENTS.md`，再读本文件，再读 `docs/ai/BUG_PATTERNS.md` 与 `docs/ai/DECISIONS.md`。
+> 启动指令与文档地图见 `docs/ai/START_HERE.md`。
 
 ## 当前目标
 
