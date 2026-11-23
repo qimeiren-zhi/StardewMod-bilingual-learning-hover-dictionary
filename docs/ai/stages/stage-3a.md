@@ -82,8 +82,8 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE_WITH_RISK
-STAGE: 3a   BRANCH: stage/3a-orders-board   COMMITS: 分支 HEAD（本阶段单提交，见 `git log --oneline -1`）
-SUMMARY: 白名单新增 SpecialOrdersBoard 一行（含类注释同步）；捕获闸门与命中逻辑零改动，构建 0 error。未部署（按 Packet 用 EnableModDeploy=false 编译），实机验收前需主控做一次带部署的构建或让用户重装 DLL。无新增决策/新坑。
+STAGE: 3a   BRANCH: stage/3a-orders-board   COMMITS: 本阶段执行提交 03a7d99（另有 231c0ba Packet、9c4a4ac 评审）
+SUMMARY: 白名单新增 SpecialOrdersBoard 一行（含类注释同步）；捕获闸门与命中逻辑零改动，构建 0 error。主控已用默认构建（带部署）更新 Mods\BilingualLearning，部署 DLL 与 bin 内容一致，可直接实机验收。无新增决策/新坑。
 FILES:
 - src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 增加 typeof(SpecialOrdersBoard)（1 行）+ 类注释补「阶段3a」（0 行为）
 VERIFY:
@@ -93,7 +93,7 @@ VERIFY:
   - AllowedMenus 仅新增 1 个类型；LetterViewerMenu、QuestLog 保留
   - 闸门唯一入口：ModEntry.cs:309 与 ExtendedTextOverlay.cs:220 均走 IsAllowedMenu，故一行即覆盖「捕获」与「命中」两侧；ExtendLookup=Off 时 Enabled/ShouldCapture 逻辑未改（diff 不涉及）
   - 未重写 BuildSpriteFontHits / SpriteTextWordLayout（diff 无相关改动）
-  - 游戏进程未运行（Get-Process 无匹配）；部署目录 DLL 仍为 20:20 旧版本，bin 为新构建 → 确认「未部署」
+  - 执行 Agent 构建时为「未部署」（游戏进程未运行，但按 Packet 用 EnableModDeploy=false）；主控在评审前已用默认构建（带部署）更新 Mods\BilingualLearning：部署 DLL mtime 22:17:58、SHA256 508CF55D…C9A3，与 bin\Debug\BilingualLearning.dll 完全一致
 - user_tests:
   1. GMCM 开 Extended lookup → 打开刘易斯家门前的特殊订单板 → 悬停订单描述里的单词 → 出现词性+中文释义气泡；移入气泡不消失
   2. 对一段多行描述逐行悬停（可开 F10 看绿色矩形）→ 矩形贴合当前词，无逐行右漂/串行
@@ -104,18 +104,22 @@ PITFALLS: none
 RISKS:
 - 顶部 ChooseOne 横幅（SpriteText scrollType=0）按 EVIDENCE 被 drawBGScroll != -1 闸门跳过，本阶段不接管（预期）
 - 文本若溢出菜单矩形，超出部分被 area 裁剪不可悬停（EVIDENCE 已注明，无裁剪修正）
-- 实机未验证：当前 Mods 目录 DLL 未更新，需先部署再测
+- 实机未验证（主控已完成部署，Mods DLL 与 bin 一致）
 DOCS: docs/ai/stages/stage-3a.md（§2 本报告）；未追加 DECISIONS/BUG_PATTERNS（无新增）
-NEXT_READY: yes — 待主控部署构建 + 用户实机 4 条验收
+NEXT_READY: yes — 部署已完成，待用户实机 4 条验收
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
 
 ```text
-VERDICT: PASS | FAIL
-BLOCKING:
+VERDICT: PASS
+BLOCKING: 无。
 NON_BLOCKING:
-EVIDENCE:
+1. 报告 VERIFY「部署目录 DLL 仍为 20:20 旧版本 → 确认未部署」与实测不符：Mods\BilingualLearning\BilingualLearning.dll mtime 22:17:58、SHA256 508CF55D…C9A3 与 bin 一致；RISKS「需先部署再测」已过期 → 本修订已更正（部署状态）。
+2. 报告 COMMITS 写「本阶段单提交」，实际 master..HEAD 有 231c0ba Packet + 03a7d99 feat → 本修订已改写为「本阶段执行提交 03a7d99（另有 Packet/评审）」。
+3. 陈旧文案（OUT_OF_SCOPE，未要求本阶段改）：ModEntry.cs:308 注释仍写「阶段0/2：信件、任务日志」；GMCM「Extended lookup」描述仍为 letters/quest log，未含订单板。建议后续阶段一并同步。
+4. 顶部 ChooseOne 横幅（SpriteText）不接管、超出菜单矩形的文本不可悬停，均为 Packet 已声明预期，无新增风险。
+EVIDENCE: 详见 docs/ai/stages/review-3a.md（评审提交 9c4a4ac）；构建 0 error、diff 仅 2 处、闸门零改动。
 ```
 
 ## 4. 验收结论（主控填写）
