@@ -101,6 +101,17 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 **问题 C（不修，记录）**：气泡内移动时游戏 tooltip 按光标重算下一行 —— 用户认为可接受，已记入 `docs/requirements/需求规格说明.md` §10-4。
 
+## 1.2 修复轮 2 范围（2026-11-24，点击吞掉）
+
+**问题 D：点击释义气泡会误触下层控件**
+- 现象：商店里悬停商品名出气泡，光标移入气泡后点击 → 游戏把点击传给气泡下方的商品行，**误购买下一行商品**（截图 4）；用户指出后续星标功能也会点气泡，误触不可接受。
+- 范围（仅本阶段）：`ShopMenu` 的 `receiveLeftClick`，当点击点落在「气泡 ∪ 词矩形 ∪ 桥接矩形」内时吞掉点击（prefix 返回 false），不改变其它菜单点击行为（通用吞掉留阶段 5 统一做）。
+- 修法：
+  - `ExtendedTextOverlay` 增加 `public bool IsPointerOnBubble(int x, int y)`：`HasBubble && (bubbleLayout.BubbleBox.Contains || hoveredWordBox.Contains || bridgeRect.Contains)`。
+  - `ModEntry` 新增 Harmony prefix：`ShopMenu.receiveLeftClick(int x, int y, bool playSound)` → 命中则 return false；在 `Entry` 里注册（与既有 patch 同处），找不到方法时只 Warn。
+- 验收：气泡上点击不购买；气泡外点击正常；其它菜单行为不变；`ExtendLookup=Off` 时零影响。
+- 不修：其它菜单（信件/任务日志/订单板/木匠/任务板）的同类误触，统一留到阶段 5「扩展面点击吞掉」；本轮只封商店（购买不可逆，风险最高）。
+
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
