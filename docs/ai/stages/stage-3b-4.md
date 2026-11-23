@@ -129,7 +129,7 @@ VERIFY:
 - checks（修复轮）: diff 仅 `ModEntry.AfterDrawHoverText`（+18/−4，含注释）与 `ExtendedTextOverlay.DrawCursor`/`cursorDiagLogged`（+19/−1）；未改 `TooltipTextCapture`、卡片重放、气泡布局/命中/桥接、捕获闸门、GMCM、manifest/csproj/版本号/dist/bin/obj/references；修复 A 仅对 `ShopMenu` 生效，其它菜单 `AfterDrawHoverText` 行为不变；`__args.Length > 9` 的判断改写为 early-return，语义等价
   - 修复 A 验证方式：阅读 diff 确认忽略条件是 `Game1.activeClickableMenu is ShopMenu && __args[9] is not Item`；商店内物品 tooltip（`__args[9]` 为 `Item`）仍正常缓存 → F1 标题/描述应为商品。
   - 修复 B 验证方式：`DrawCursor` 已改为两参重载 `drawMouse(b, ignore_transparency: true)`（采纳评审建议：第三参不传 `Game1.mouseCursor`，走默认 `cursor=-1` 的 snappy/手柄光标选择逻辑，避免 snappy/手柄模式画错图标）；`Game1.mouseCursorTransparency`/`Game1.options.hardwareCursor` 均 public（构建通过即签名正确）；诊断日志受 `DebugRects` 与 `cursorDiagLogged` 双重闸门，每气泡最多 1 条。
-- checks（修复轮 2）: Mono.Cecil 核实 `StardewValley.Menus.ShopMenu::receiveLeftClick(System.Int32,System.Int32,System.Boolean)` 存在且签名与预期一致；patch 只挂 `ShopMenu` 的 override（不动 `IClickableMenu` 基类，虚拟分派会命中 override）；prefix 返回 `instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true`（无 overlay/无气泡 → true，即放行）；`IsPointerOnBubble` 仅在 `HasBubble` 为真时判区域，`ExtendLookup=Off` 时气泡不建立 → 零影响；未改其它菜单点击路径。
+- checks（修复轮 2）: Mono.Cecil 核实 `StardewValley.Menus.ShopMenu::receiveLeftClick(System.Int32,System.Int32,System.Boolean)` 与 `receiveRightClick(System.Int32,System.Int32,System.Boolean)` 均存在且签名与预期一致（右键同样有 `forSaleButtons → tryToPurchaseItem` 购买分支，故两个 prefix 共用 `BeforeShopClick`）；patch 只挂 `ShopMenu` 的 override（不动 `IClickableMenu` 基类，虚拟分派会命中 override）；prefix 返回 `instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true`（无 overlay/无气泡 → true，即放行）；`IsPointerOnBubble` 仅在 `HasBubble` 为真时判区域，`ExtendLookup=Off` 时气泡不建立 → 零影响；未改其它菜单点击路径。
 - user_tests:
   1. 商店悬停商品名出气泡 → 光标移入气泡并左键点击：不购买、不触发气泡下方商品行（重点复测上一行/下一行）；气泡仍显示。
   2. 气泡外（商品名/商品图标/空白）左键：与原生一致，能正常购买/切换页签；移出气泡后点击仍正常。
@@ -138,7 +138,7 @@ VERIFY:
 DECISIONS: 新增 #19「商店 tooltip 不接管，物品描述用 F1 知识卡片间接查词」（背景/决策/原因/影响/替代方案）。
 PITFALLS: 新坑（暂记本文件，未改 BUG_PATTERNS——本轮 IN_SCOPE 未含）：商店「最后一次 tooltip 缓存」被店长问候语覆盖 → F1 打开问候语卡片；根因是 `ShopMenu.draw` 在物品 tooltip 之后又调用 `drawHoverText(portraitPersonDialogue)`（IL_0C80），而 `AfterDrawHoverText` 只保留最后一次参数；修法是在 `ShopMenu` 下忽略 `__args[9] is not Item` 的调用。关键词：`drawHoverText` `portraitPersonDialogue` `__args[9]` `lastTooltipArgs` `问候语`。
 RISKS:
-- 修复轮 2 只在 `ShopMenu` 吞点击（用户明确本轮只封商店，其它扩展面留阶段 5 统一做）；信件/任务日志/订单板/木匠/任务板的同类穿透仍存在，属已知范围外。
+- 修复轮 2 只在 `ShopMenu` 吞点击（用户明确本轮只封商店，其它扩展面留阶段 5 统一做）；信件/任务日志/订单板/木匠/任务板的同类穿透仍存在，属已知范围外。左键与右键（1/5/25/999 数量购买分支）均已覆盖，中键/滚轮未涉及。
 - 吞点击只看「当前气泡区域」，若气泡在点击前一刻因移出词/翻页被清空，点击会落回原生路径（正常语义，但极端时序下可能漏吞一次）。
 - 修复 A 的副作用：在商店内若尚未悬停任何物品（无物品 tooltip、仅有问候语被忽略），F1 会沿用「上一处缓存的 tooltip」（可能是先前菜单/背包物品）。这是「F1 用上一帧 tooltip」既有语义，非本轮回归；用户测试按「先悬停商品再 F1」覆盖。
 - 商店 draw 内的 drawHoverText/drawToolTip 仍走通用 SpriteBatch.DrawString Hook，理论上 tooltip 文本可能被捕获成词矩形并落在菜单矩形内（与木匠/任务板同构风险）；未做针对性排除（属 OUT_OF_SCOPE），实机若出现「悬停 tooltip 也出气泡」按设计不改，仅记录。
