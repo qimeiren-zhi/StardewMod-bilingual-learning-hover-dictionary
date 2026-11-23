@@ -87,25 +87,45 @@ public class ModEntry : Mod
             prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeClick))
         );
 
-        // 3b-4: 商店气泡吞点击（否则气泡盖住商品行时左/右键会穿透、误购下一行）
-        // 右键在 ShopMenu 里同样有 forSaleButtons → tryToPurchaseItem 分支，必须一并吞。
-        foreach (string clickMethodName in new[] { nameof(ShopMenu.receiveLeftClick), nameof(ShopMenu.receiveRightClick) })
+        // 5a: 扩展面统一吞点击 —— 气泡（含词/桥接）区域内的左/右键不再穿透到菜单动作。
+        // 注意：AccessTools.Method(type,...) 会沿继承链命中基类方法；只 patch `DeclaringType == type`
+        // 的自身 override，否则基类方法会被多个类型重复 patch、prefix 执行多次。
+        foreach (Type menuType in ExtendedTextOverlay.SupportedMenus)
         {
-            var shopClick = AccessTools.Method(
-                typeof(ShopMenu),
-                clickMethodName,
-                new[] { typeof(int), typeof(int), typeof(bool) }
-            );
-            if (shopClick != null)
+            foreach (string clickMethodName in new[] { "receiveLeftClick", "receiveRightClick" })
             {
-                harmony.Patch(
-                    original: shopClick,
-                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeShopClick))
+                bool isRightClick = clickMethodName == "receiveRightClick";
+                var clickMethod = AccessTools.Method(
+                    menuType,
+                    clickMethodName,
+                    new[] { typeof(int), typeof(int), typeof(bool) }
                 );
-            }
-            else
-            {
-                this.Monitor.Log($"未找到 ShopMenu.{clickMethodName}，商店气泡上的该键点击会穿透到商品行", LogLevel.Warn);
+
+                if (clickMethod == null)
+                {
+                    if (!isRightClick)
+                    {
+                        this.Monitor.Log($"未找到 {menuType.Name}.{clickMethodName}，该菜单气泡上的点击会穿透", LogLevel.Warn);
+                    }
+                    continue;
+                }
+
+                if (clickMethod.DeclaringType != menuType)
+                {
+                    // 右键多数菜单没有 override（基类 IClickableMenu.receiveRightClick 为空），跳过是预期行为。
+                    if (!isRightClick)
+                    {
+                        this.Monitor.Log(
+                            $"{menuType.Name}.{clickMethodName} 未声明 override（继承自 {clickMethod.DeclaringType?.Name}），跳过 patch",
+                            LogLevel.Warn);
+                    }
+                    continue;
+                }
+
+                harmony.Patch(
+                    original: clickMethod,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeExtendedMenuClick))
+                );
             }
         }
 
@@ -461,8 +481,8 @@ public class ModEntry : Mod
         return instance?.overlay.OnClick(__instance, x, y) ?? true;
     }
 
-    /// <summary>商店左/右键 prefix：点在释义气泡（含词/桥接）内时吞掉点击，避免穿透到商品行。</summary>
-    private static bool BeforeShopClick(int x, int y)
+    /// <summary>扩展面菜单左/右键 prefix：点在释义气泡（含词/桥接）内时吞掉点击，避免穿透到菜单动作（商店购买/信件翻页/接任务等）。</summary>
+    private static bool BeforeExtendedMenuClick(int x, int y)
     {
         return instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true;
     }
