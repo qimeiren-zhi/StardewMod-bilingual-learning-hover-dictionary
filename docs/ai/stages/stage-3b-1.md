@@ -84,16 +84,28 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE
+STAGE: 3b-1
+
+SUMMARY: CarpenterMenu 加入 ExtendedTextOverlay.AllowedMenus（一行白名单 + 类注释同步 3b-1），复用既有 SpriteFont 捕获/布局/去重/裁剪，无新增 hook。构建 0 error（EnableModDeploy=false，未部署）；闸门 IsEnabled/ShouldCapture、布局 BuildSpriteFontHits、TextCapture.Add 均未改动，ExtendLookup=Off 行为不变。
+
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 增 typeof(CarpenterMenu)；类注释补「阶段3b-1：木匠/建造菜单」
+- docs/ai/stages/stage-3b-1.md — 本报告（§2）
+
 VERIFY:
-DECISIONS:
-PITFALLS:
-RISKS:
-DOCS:
-NEXT_READY:
+- build: 0 error（1 warning CS9057 已知无害）；命令 dotnet build -c Debug -p:EnableModDeploy=false；游戏运行中 → 只编译未部署
+- checks: git diff --stat = 1 文件（源码 3+/2-，其中语义改动仅 1 个类型条目）；diff 不含 IsAllowedMenu/ShouldCapture/IsEnabled/RebuildWordRects/BuildSpriteFontHits/TextCapture；白名单保留 LetterViewerMenu/QuestLog/SpecialOrdersBoard；未动 manifest/csproj/版本号/bin/obj/dist/references
+- user_tests: ① GMCM 开 Extended lookup → 木匠「建造农场建筑」→ 悬停右侧蓝图描述单词出气泡，移入气泡不消失 ② 悬停配料名（Wood/Stone/Clay/Hardwood）正确出气泡，移开即消失、不长期遮挡数量/造价 ③ 上下切换蓝图，旧气泡不残留、新描述可查词 ④ 关闭 Extended lookup，木匠菜单不出气泡，对话/F1 卡片/信件/任务日志/特殊订单板行为不变
+
+DECISIONS: none（复用 决策 18「白名单 + 只读气泡」，无新长期决策）
+
+PITFALLS: none（本阶段未踩新坑；≤4px 去重吃掉三层阴影为 19 号坑既定行为）
+
+RISKS: 未实机验证（只编译未部署）；CarpenterMenu 的「建造费」文本在钱不够时变红（同一 DrawString 调用，捕获不受影响，未实测）；底部 Choose/Move/Paint/Demolish 按钮与蓝图标题走 SpriteText 卷轴，本阶段按设计不接管（不显示气泡）。
+
+DOCS: docs/ai/stages/stage-3b-1.md §2；未追加 DECISIONS/BUG_PATTERNS
+NEXT_READY: yes — 可进评审 + 带部署构建 + 用户实机 4 条
 ```
 
 ## 3. 评审结论（评审 Agent 填写）

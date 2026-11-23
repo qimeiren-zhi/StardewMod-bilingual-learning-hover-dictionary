@@ -11,7 +11,7 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 把查词扩展到非对话框的菜单文本面。
-/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板。
+/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单。
 /// 只读悬停、不含星标交互；命中范围裁剪到当前菜单矩形内（滚动列表中不命中被裁掉的文字）。
 /// </summary>
 public class ExtendedTextOverlay
@@ -21,7 +21,8 @@ public class ExtendedTextOverlay
     {
         typeof(LetterViewerMenu),
         typeof(QuestLog),
-        typeof(SpecialOrdersBoard)
+        typeof(SpecialOrdersBoard),
+        typeof(CarpenterMenu)
     };
 
     private IMonitor monitor = null!;
