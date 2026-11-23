@@ -87,6 +87,28 @@ public class ModEntry : Mod
             prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeClick))
         );
 
+        // 3b-4: 商店气泡吞点击（否则气泡盖住商品行时左/右键会穿透、误购下一行）
+        // 右键在 ShopMenu 里同样有 forSaleButtons → tryToPurchaseItem 分支，必须一并吞。
+        foreach (string clickMethodName in new[] { nameof(ShopMenu.receiveLeftClick), nameof(ShopMenu.receiveRightClick) })
+        {
+            var shopClick = AccessTools.Method(
+                typeof(ShopMenu),
+                clickMethodName,
+                new[] { typeof(int), typeof(int), typeof(bool) }
+            );
+            if (shopClick != null)
+            {
+                harmony.Patch(
+                    original: shopClick,
+                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeShopClick))
+                );
+            }
+            else
+            {
+                this.Monitor.Log($"未找到 ShopMenu.{clickMethodName}，商店气泡上的该键点击会穿透到商品行", LogLevel.Warn);
+            }
+        }
+
         // S3: 气泡覆盖层绘制
         helper.Events.Display.RenderedActiveMenu += this.OnRenderedActiveMenu;
 
@@ -316,12 +338,22 @@ public class ModEntry : Mod
 
     private static void AfterDrawHoverText(object[] __args)
     {
-        if (__args.Length > 9)
+        if (__args.Length <= 9)
         {
-            lastTooltipBody = __args[1] as string;
-            lastTooltipTitle = __args[6] as string;
-            lastTooltipArgs = (object[])__args.Clone();
+            return;
         }
+
+        // 商店：物品 tooltip（drawToolTip → drawHoverText，参数 9 是 Item）之后，
+        // base.draw 里还会为店长问候语再调用一次 drawHoverText（参数 9 不是 Item）。
+        // 后者会覆盖缓存导致 F1 打开问候语卡片，这里直接忽略非物品 tooltip。
+        if (Game1.activeClickableMenu is ShopMenu && __args[9] is not Item)
+        {
+            return;
+        }
+
+        lastTooltipBody = __args[1] as string;
+        lastTooltipTitle = __args[6] as string;
+        lastTooltipArgs = (object[])__args.Clone();
     }
 
     private void RegisterConfigMenu(IModHelper helper)
@@ -427,6 +459,12 @@ public class ModEntry : Mod
     private static bool BeforeClick(DialogueBox __instance, int x, int y)
     {
         return instance?.overlay.OnClick(__instance, x, y) ?? true;
+    }
+
+    /// <summary>商店左/右键 prefix：点在释义气泡（含词/桥接）内时吞掉点击，避免穿透到商品行。</summary>
+    private static bool BeforeShopClick(int x, int y)
+    {
+        return instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true;
     }
 
     private void OnRenderedActiveMenu(object? sender, RenderedActiveMenuEventArgs e)

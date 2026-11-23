@@ -11,7 +11,7 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 把查词扩展到非对话框的菜单文本面。
-/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表。
+/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表；阶段3b-4：商店正文（物品名/价格/以物易物/缺货提示，tooltip 不接管，见 DECISIONS 19）。
 /// 只读悬停、不含星标交互；命中范围裁剪到当前菜单矩形内（滚动列表中不命中被裁掉的文字）。
 /// </summary>
 public class ExtendedTextOverlay
@@ -25,7 +25,8 @@ public class ExtendedTextOverlay
         typeof(CarpenterMenu),
         typeof(Billboard),
         typeof(ShippingMenu),
-        typeof(ItemListMenu)
+        typeof(ItemListMenu),
+        typeof(ShopMenu)
     };
 
     private IMonitor monitor = null!;
@@ -48,6 +49,9 @@ public class ExtendedTextOverlay
 
     /// <summary>是否绘制命中矩形（F10 切换，用于实机对位）。</summary>
     public bool DebugRects { get; set; }
+
+    /// <summary>本轮气泡是否已经打印过一次光标诊断（F10 时每个气泡只打一次，避免刷屏）。</summary>
+    private bool cursorDiagLogged;
 
     /// <summary>当前是否正在显示气泡（用于决定是否重绘光标）。</summary>
     public bool HasBubble => this.hasBubble;
@@ -211,7 +215,32 @@ public class ExtendedTextOverlay
     /// <summary>气泡画完后重绘菜单光标，确保光标浮在气泡之上。</summary>
     public void DrawCursor(SpriteBatch b)
     {
-        Game1.activeClickableMenu?.drawMouse(b);
+        // 显式忽略 transparency；第三个参数不传，走 drawMouse 默认 cursor=-1 的 snappy/手柄光标选择逻辑。
+        Game1.activeClickableMenu?.drawMouse(b, ignore_transparency: true);
+
+        // 仅在 F10 调试开启时每气泡打印一次光标状态，便于判断是否还有 transparency/硬件光标干扰。
+        if (this.DebugRects && !this.cursorDiagLogged && this.monitor != null)
+        {
+            this.cursorDiagLogged = true;
+            this.monitor.Log(
+                $"[诊断] cursor 菜单={Game1.activeClickableMenu?.GetType().Name} " +
+                $"transparency={Game1.mouseCursorTransparency} cursor={Game1.mouseCursor} " +
+                $"hardwareCursor={Game1.options.hardwareCursor}",
+                LogLevel.Info);
+        }
+    }
+
+    /// <summary>
+    /// 光标是否落在释义气泡内（含词矩形与桥接矩形）。
+    /// 供菜单侧吞掉点击使用，避免「气泡盖住商品行时点击穿透、误购下一行商品」。
+    /// </summary>
+    public bool IsPointerOnBubble(int x, int y)
+    {
+        var point = new Point(x, y);
+        return this.HasBubble
+            && (this.bubbleLayout.BubbleBox.Contains(point)
+                || this.hoveredWordBox.Contains(point)
+                || this.bridgeRect.Contains(point));
     }
 
     private bool IsEnabled()
@@ -437,6 +466,7 @@ public class ExtendedTextOverlay
         this.hoveredTranslation = null;
         this.hasBubble = false;
         this.bridgeRect = Rectangle.Empty;
+        this.cursorDiagLogged = false;
     }
 
     private static Rectangle ComputeBridge(Rectangle wordBox, Rectangle bubbleBox)
