@@ -30,7 +30,7 @@ public class ExtendedTextOverlay
     };
 
     /// <summary>白名单的只读视图，供 ModEntry 注册点击吞掉补丁（阶段 5a）。</summary>
-    internal static IReadOnlyList<Type> SupportedMenus => AllowedMenus;
+    internal static IReadOnlyList<Type> SupportedMenus => Array.AsReadOnly(AllowedMenus);
 
     private IMonitor monitor = null!;
     private DictionaryData? dictionary;
@@ -236,11 +236,13 @@ public class ExtendedTextOverlay
     /// <summary>
     /// 光标是否落在释义气泡内（含词矩形与桥接矩形）。
     /// 供菜单侧吞掉点击使用，避免「气泡盖住商品行时点击穿透、误购下一行商品」。
+    /// 同时校验气泡仍属于当前活动菜单，避免切换菜单后一帧内旧气泡误吞点击。
     /// </summary>
     public bool IsPointerOnBubble(int x, int y)
     {
         var point = new Point(x, y);
         return this.HasBubble
+            && ReferenceEquals(this.trackedMenu, Game1.activeClickableMenu)
             && (this.bubbleLayout.BubbleBox.Contains(point)
                 || this.hoveredWordBox.Contains(point)
                 || this.bridgeRect.Contains(point));

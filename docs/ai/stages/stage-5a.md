@@ -97,10 +97,10 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE
-STAGE: 5a   BRANCH: stage/5a-click-swallow   COMMITS: 1（本次提交；报告随代码提交，哈希见提交记录）
+STAGE: 5a   BRANCH: stage/5a-click-swallow   COMMITS: 2（主体 + 评审收尾；哈希见提交记录）
 SUMMARY: 把 3b-4 的 ShopMenu 专用「气泡区域吞点击」泛化为遍历 `ExtendedTextOverlay.SupportedMenus` 的统一 prefix，共 patch 12 个自身 override（左键 8 个 + 右键 4 个），未命中气泡时一律放行。`AllowedMenus` 内容与顺序未变，仅新增只读视图 `SupportedMenus`；`ExtendLookup=Off` 时无气泡建立，prefix 恒放行。构建 0 error（未部署，待主控带部署重建后实机验收）。
 FILES:
-- src/BilingualLearning/ExtendedTextOverlay.cs — 新增 `internal static IReadOnlyList<Type> SupportedMenus => AllowedMenus;`（白名单内容/顺序不变）
+- src/BilingualLearning/ExtendedTextOverlay.cs — 新增 `internal static IReadOnlyList<Type> SupportedMenus => Array.AsReadOnly(AllowedMenus);`（白名单内容/顺序不变；真只读包装）；`IsPointerOnBubble` 增加活动菜单守卫 `ReferenceEquals(trackedMenu, Game1.activeClickableMenu)`
 - src/BilingualLearning/ModEntry.cs — 删除 ShopMenu 专用注册块，改为遍历 8 类型 × 左/右键注册；只 patch `method.DeclaringType == type` 的自身 override；`BeforeShopClick` 更名 `BeforeExtendedMenuClick`（实现不变）
 - docs/ai/stages/stage-5a.md — 本报告（§2）
 VERIFY:
@@ -109,7 +109,8 @@ VERIFY:
   - `git diff --stat master...stage/5a-click-swallow` ⊆ IN_SCOPE（源码 2 文件 + stage-5a.md；无 manifest/csproj/版本号/dist/bin/obj/references）
   - Mono.Cecil 复核 Stardew Valley 1.6.15：8 个类型均有 `receiveLeftClick(int,int,bool)` 自身 override；`receiveRightClick(int,int,bool)` 自身 override 仅 LetterViewerMenu / SpecialOrdersBoard / Billboard / ShopMenu 4 个 → 实际注册 12 个 patch，无重复、无基类 patch
   - 跳过右键（未声明 override，继承基类空实现）：QuestLog、CarpenterMenu、ShippingMenu、ItemListMenu
-  - 左键同名方法找不到或声明类型非自身时 Warn 并跳过；右键缺失/继承时仅 Debug（预期行为，不刷日志）
+  - 左键同名方法找不到或声明类型非自身时 Warn 并跳过；右键缺失/继承时**静默 continue（不写日志）**，为预期行为
+  - `IsPointerOnBubble` 增加菜单守卫：`HasBubble && ReferenceEquals(trackedMenu, Game1.activeClickableMenu) && (气泡∪词∪桥接)`，消除「切菜单后一帧旧气泡误吞点击」窗口
   - `ExtendLookup=Off`：`UpdateAndDraw` 走 `Clear()` → `HasBubble=false` → `IsPointerOnBubble` 返回 false → prefix 返回 true，零行为变化
   - 白名单 8 类型不变：LetterViewerMenu / QuestLog / SpecialOrdersBoard / CarpenterMenu / Billboard / ShippingMenu / ItemListMenu / ShopMenu
 - user_tests:
@@ -123,7 +124,7 @@ PITFALLS: 新坑（已写在 Packet EVIDENCE，本阶段未改 BUG_PATTERNS 以�
 RISKS:
 - 已知风险（Packet 已列）：信件气泡可见时点击正文**词**不再翻页（词矩形属于吞掉区域）；空白处仍翻页。属预期，验收时按此判断。
 - prefix 只看上一帧建立的 `HasBubble`；若点击前一刻因移出词/翻页清空气泡，该次点击会落回原生路径（正常语义，极端时序可能漏吞一次）。
-- `IsPointerOnBubble` 不校验当前菜单类型，但 `HasBubble` 仅由白名单菜单的绘制帧建立，切换菜单时 `UpdateAndDraw` 会 `Clear`；理论上存在「换菜单后尚未重绘的一帧」窗口，未实机复现。
+- 菜单守卫要求 `trackedMenu` 与当前活动菜单为同一实例；切菜单后到首次绘制前的窗口内气泡判定为 false（放行原生点击），属安全侧行为。
 - 右键吞掉对 LetterViewerMenu 会同时阻断其「右键转调左键」的翻页/关信路径（仅在气泡上）；气泡外不受影响。
 - 本次构建未部署；实机测试前需主控执行带部署构建（游戏当前未运行，已确认）。
 - 未覆盖：中键/滚轮；非白名单菜单（GameMenu 各页、世界层）的同类穿透仍按 DECISIONS #18 留待后续。
