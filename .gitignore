@@ -10,12 +10,8 @@ dist/
 .idea/
 .vscode/
 
-# 反编译参考源码（外部下载，不入库）
-DialogueBox.cs
-Dialogue.cs
-SpriteText.cs
-IClickableMenu.cs
-reflection-notes.txt
+# 反编译参考源码（外部反编译，不入库，仅本地只读参考）
+references/
 
 # 原始词典与下载数据（大文件，可重新下载）
 tools/ecdict.csv

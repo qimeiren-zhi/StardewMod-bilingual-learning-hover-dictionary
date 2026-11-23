@@ -34,6 +34,7 @@ D:\Project\星露谷双语mod\
 │  ├─ release\                    # Nexus 发布文案
 │  └─ ai\                         # 本交接包
 ├─ assets\art\                    # 原始气泡设计稿（二进制）
+├─ references\decompiled\         # 游戏反编译参考（gitignored，只读参考）
 ├─ dist\                          # 发布包（gitignore）
 ├─ README.md / CHANGELOG.md
 ```
@@ -125,7 +126,7 @@ C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\Biling
 
 1. **不要**在 `Entry` 调用 `ReadSaveData`、`GetApi`（会崩溃/报错）。
 2. **不要**用 `WriteSaveData` 存生词本（只写内存，退出即丢）。
-3. **不要**修改 `DialogueBox.cs`/`Dialogue.cs`/`SpriteText.cs`/`IClickableMenu.cs`（反编译参考，gitignored）。
+3. **不要**修改 `references/decompiled/` 下的反编译参考源码（gitignored，仅只读参考）。
 4. **不要**提交 `bin/`、`obj/`、`dist/`、`tools/ecdict.csv`（见 `.gitignore`）。
 5. **不要**用系统 `C:\Program Files\dotnet`（无 SDK）构建；必须用 `C:\Users\zhiqi\dotnet\dotnet.exe`。
 6. **不要**在游戏运行时构建部署（DLL 被锁）；先关闭游戏。
