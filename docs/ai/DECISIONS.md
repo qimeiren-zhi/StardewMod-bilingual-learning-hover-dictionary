@@ -166,5 +166,17 @@
 - **影响**：`ExtendedTextOverlay.AllowedMenus` 只加 `ShopMenu`（正文）；商店 tooltip、背包 tooltip、`TooltipTextCapture`、`ModEntry` 的 `drawHoverText` Hook 均**零改动**；`ExtendLookup=Off` 时行为与之前完全一致。
 - **替代方案及否决原因**：在商店内捕获 `drawHoverText`/`drawToolTip` 的绘制文本（复用 `TooltipTextCapture`）→ 否决：需要新的 Hook/捕获路径 + 与商店 tooltip 的绘制顺序/光标重绘协调，且会与背包格 tooltip 同屏产生双 tooltip 冲突，超出本阶段范围。
 
+## 决策 20：扩展面星标复用对话路径的 Vocabulary 与气泡布局
+
+- **背景**：阶段 5b 要给白名单菜单（信件/任务日志/订单板/木匠/任务板/发货箱/丢物列表/商店正文）的查词气泡加星标收藏；对话路径已有成熟的星标语义（`WordOverlay.ToggleStar`）与视觉（`BubbleRenderer` 的 `showStar/starred`）。
+- **决策**：
+  - `ExtendedTextOverlay.Init` 直接持有与对话路径**同一个** `Vocabulary` 实例，不新建收藏体系，不改 `VocabData`/`Exporter`；
+  - 气泡布局复用 `BubbleRenderer.ComputeLayout(..., showStar: true)` 与 `Draw(..., starred, ..., showStar: true)`，星标命中用既有 `BubbleLayout.StarBox`（24×24，气泡左侧内边距内）；
+  - 左键菜单 prefix：先 `TryToggleStar`（命中星标则收藏/取消并吞掉），否则气泡区域只吞不 toggle；右键 prefix 只吞不 toggle（与对话路径一致，星标仅响应左键）；
+  - `VocabEntry.Sentence` 取命中词所在捕获行文本（`SpriteWordHit.LineText`，经 `WordOverlay.CleanSentence` 清理 `^`/`^^`），`FirstSeen` 用当前游戏年/季/日；toggle 走 `Vocabulary.Add/Remove`，内部立即 `WriteJsonFile`（沿用决策 2）。
+- **原因**：① 复用已验证的语义与布局，数据格式/导出零改动，F9 导出天然包含扩展面收藏；② 星标与气泡同属一个覆盖层，命中框天然一致，避免第二套坐标与桥接；③ 立即写盘避免退出丢词。
+- **影响文件**：`ExtendedTextOverlay.cs`、`ModEntry.cs`、`SpriteTextWordLayout.cs`（`SpriteWordHit.LineText`）、`WordOverlay.cs`（`CleanSentence` 仅提升可见性为 `internal static`）。`BubbleRenderer.cs`、生词本模型/导出、其它菜单均零改动。
+- **替代方案及否决原因**：新建扩展面专用收藏列表 → 否决：会出现两套生词本与导出分叉，与对话收藏不一致；把点击处理做进 `BubbleRenderer` → 否决：渲染器不应持有菜单/生词本状态，且 5a 的统一吞点击已建在菜单 prefix 上；给扩展面另算一套星标坐标 → 否决：`BubbleLayout.StarBox` 已是唯一事实来源，重复计算易漂移。
+
 
 

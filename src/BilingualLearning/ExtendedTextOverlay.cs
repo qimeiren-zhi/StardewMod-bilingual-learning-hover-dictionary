@@ -11,8 +11,8 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 把查词扩展到非对话框的菜单文本面。
-/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表；阶段3b-4：商店正文（物品名/价格/以物易物/缺货提示，tooltip 不接管，见 DECISIONS 19）。
-/// 只读悬停、不含星标交互；命中范围裁剪到当前菜单矩形内（滚动列表中不命中被裁掉的文字）。
+/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表；阶段3b-4：商店正文（物品名/价格/以物易物/缺货提示，tooltip 不接管，见 DECISIONS 19）；阶段5b：星标收藏（复用对话路径的 Vocabulary 与气泡布局，见 DECISIONS 20）。
+/// 悬停查词 + 星标收藏；命中范围裁剪到当前菜单矩形内（滚动列表中不命中被裁掉的文字）。
 /// </summary>
 public class ExtendedTextOverlay
 {
@@ -36,6 +36,7 @@ public class ExtendedTextOverlay
     private DictionaryData? dictionary;
     private ChineseFont? chineseFont;
     private HashSet<string>? nameSet;
+    private Vocabulary? vocabulary;
     private ModConfig config = new();
     private Texture2D? bubbleDefault;
     private Texture2D? bubbleSandy;
@@ -45,6 +46,7 @@ public class ExtendedTextOverlay
 
     private string? hoveredWord;
     private string? hoveredTranslation;
+    private string? hoveredSentence;
     private Rectangle hoveredWordBox;
     private Rectangle bridgeRect;
     private BubbleLayout bubbleLayout;
@@ -64,6 +66,7 @@ public class ExtendedTextOverlay
         DictionaryData? dictionary,
         ChineseFont? chineseFont,
         HashSet<string> nameSet,
+        Vocabulary vocabulary,
         ModConfig config,
         Texture2D? bubbleDefault,
         Texture2D? bubbleSandy)
@@ -72,6 +75,7 @@ public class ExtendedTextOverlay
         this.dictionary = dictionary;
         this.chineseFont = chineseFont;
         this.nameSet = nameSet;
+        this.vocabulary = vocabulary;
         this.config = config;
         this.bubbleDefault = bubbleDefault;
         this.bubbleSandy = bubbleSandy;
@@ -206,8 +210,9 @@ public class ExtendedTextOverlay
 
             this.hoveredWord = WordOverlay.NormalizeWord(hit.Text);
             this.hoveredTranslation = translation;
+            this.hoveredSentence = hit.LineText;
             this.hoveredWordBox = hit.Box;
-            this.bubbleLayout = BubbleRenderer.ComputeLayout(hit.Box, translation, this.chineseFont, showStar: false);
+            this.bubbleLayout = BubbleRenderer.ComputeLayout(hit.Box, translation, this.chineseFont, showStar: true);
             this.bridgeRect = ComputeBridge(hit.Box, this.bubbleLayout.BubbleBox);
             this.hasBubble = true;
             this.DrawBubble(b);
@@ -248,6 +253,65 @@ public class ExtendedTextOverlay
                 || this.bridgeRect.Contains(point));
     }
 
+    /// <summary>左键是否落在星标上（仅判定，不改状态）。</summary>
+    public bool IsPointerOnStar(int x, int y)
+    {
+        return this.HasBubble
+            && ReferenceEquals(this.trackedMenu, Game1.activeClickableMenu)
+            && this.bubbleLayout.StarBox.Contains(new Point(x, y));
+    }
+
+    /// <summary>
+    /// 5b：扩展面星标点击。命中星标时收藏/取消收藏（<see cref="Vocabulary"/> 立即写盘）并返回 true，
+    /// 调用方据此吞掉点击；其它位置返回 false。星标只响应左键（与对话路径一致）。
+    /// </summary>
+    public bool TryToggleStar(int x, int y)
+    {
+        if (this.hoveredWord == null || !this.IsPointerOnStar(x, y))
+        {
+            return false;
+        }
+
+        string word = this.hoveredWord;
+        if (this.vocabulary == null)
+        {
+            // 不静默吞：生词本未初始化时记录警告；点击仍吞掉，避免穿透到菜单动作（如翻页/接单）。
+            this.monitor.Log($"扩展面星标：生词本未初始化，忽略对 '{word}' 的收藏操作", LogLevel.Warn);
+            return true;
+        }
+
+        if (this.vocabulary.Contains(word))
+        {
+            this.vocabulary.Remove(word);
+            this.monitor.Log($"☆ 已取消收藏：'{word}'", LogLevel.Info);
+            return true;
+        }
+
+        string pos = "";
+        string translation = "";
+        if (this.dictionary != null && this.dictionary.TryGet(word, out var entry))
+        {
+            pos = entry.Pos;
+            translation = entry.Translation;
+        }
+
+        this.vocabulary.Add(new VocabEntry
+        {
+            Word = word,
+            Pos = pos,
+            Translation = translation,
+            Sentence = WordOverlay.CleanSentence(this.hoveredSentence ?? ""),
+            FirstSeen = new FirstSeen
+            {
+                Year = Game1.year,
+                Season = Capitalize(Game1.currentSeason),
+                Day = Game1.dayOfMonth
+            }
+        });
+        this.monitor.Log($"★ 已收藏：'{word}' → {pos} {translation}", LogLevel.Info);
+        return true;
+    }
+
     private bool IsEnabled()
     {
         if (this.config.ExtendLookup != "On" || !IsEnglish())
@@ -273,12 +337,12 @@ public class ExtendedTextOverlay
                 b,
                 this.bubbleLayout,
                 this.hoveredTranslation,
-                false,
+                this.vocabulary?.Contains(this.hoveredWord ?? "") == true,
                 this.config,
                 this.chineseFont,
                 this.bubbleDefault,
                 this.bubbleSandy,
-                showStar: false);
+                showStar: true);
         }
         finally
         {
@@ -361,6 +425,16 @@ public class ExtendedTextOverlay
         return text.Replace("\r", "").Replace("\n", "^").Trim();
     }
 
+    /// <summary>首字母大写（spring → Spring），与对话路径 `FirstSeen.Season` 的写法保持一致。</summary>
+    private static string Capitalize(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return s;
+        }
+        return char.ToUpper(s[0]) + s.Substring(1);
+    }
+
     private bool TryBuildTranslation(string raw, out string translation)
     {
         translation = "";
@@ -424,6 +498,7 @@ public class ExtendedTextOverlay
                 result.Add(new SpriteWordHit
                 {
                     Text = word,
+                    LineText = line.Text,
                     Box = new Rectangle((int)x, (int)y, (int)Math.Ceiling(size.X), (int)Math.Ceiling(size.Y))
                 });
             }
@@ -469,6 +544,7 @@ public class ExtendedTextOverlay
     {
         this.hoveredWord = null;
         this.hoveredTranslation = null;
+        this.hoveredSentence = null;
         this.hasBubble = false;
         this.bridgeRect = Rectangle.Empty;
         this.cursorDiagLogged = false;

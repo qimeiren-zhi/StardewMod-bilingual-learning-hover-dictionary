@@ -9,6 +9,9 @@ public sealed class SpriteWordHit
 {
     public string Text = "";
     public Rectangle Box;
+
+    /// <summary>该词所在行的原始文本（供扩展面写入 <see cref="VocabEntry.Sentence"/>）。</summary>
+    public string LineText = "";
 }
 
 /// <summary>
@@ -92,6 +95,7 @@ public static class SpriteTextWordLayout
                     current = new SpriteWordHit
                     {
                         Text = "",
+                        LineText = s,
                         Box = new Rectangle((int)posX, (int)posY, 0, (int)charHeight)
                     };
                 }

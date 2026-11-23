@@ -55,7 +55,7 @@ public class ModEntry : Mod
 
         // 阶段0/2：扩展文本面（信件 / 任务日志）悬停查词
         this.extendedOverlay = new ExtendedTextOverlay();
-        this.extendedOverlay.Init(this.Monitor, this.dictionary, this.chineseFont, nameSet, this.config, this.bubbleDefault, this.bubbleSandy);
+        this.extendedOverlay.Init(this.Monitor, this.dictionary, this.chineseFont, nameSet, this.vocabulary!, this.config, this.bubbleDefault, this.bubbleSandy);
 
         // 每帧绘制前清空捕获缓冲（本帧结果在下一帧用于命中）；关闭功能且未开调试时不产生捕获开销
         helper.Events.Display.Rendering += (sender, e) =>
@@ -87,7 +87,8 @@ public class ModEntry : Mod
             prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeClick))
         );
 
-        // 5a: 扩展面统一吞点击 —— 气泡（含词/桥接）区域内的左/右键不再穿透到菜单动作。
+        // 5a/5b: 扩展面统一吞点击 —— 气泡（含词/桥接）区域内的左/右键不再穿透到菜单动作。
+        // 左键先尝试星标 toggle（命中星标即收藏/取消并吞掉），其余气泡区域只吞；右键只吞不 toggle（与对话一致）。
         // 注意：AccessTools.Method(type,...) 会沿继承链命中基类方法；只 patch `DeclaringType == type`
         // 的自身 override，否则基类方法会被多个类型重复 patch、prefix 执行多次。
         foreach (Type menuType in ExtendedTextOverlay.SupportedMenus)
@@ -124,7 +125,9 @@ public class ModEntry : Mod
 
                 harmony.Patch(
                     original: clickMethod,
-                    prefix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.BeforeExtendedMenuClick))
+                    prefix: new HarmonyMethod(
+                        typeof(ModEntry),
+                        isRightClick ? nameof(ModEntry.BeforeExtendedMenuRightClick) : nameof(ModEntry.BeforeExtendedMenuLeftClick))
                 );
             }
         }
@@ -481,8 +484,28 @@ public class ModEntry : Mod
         return instance?.overlay.OnClick(__instance, x, y) ?? true;
     }
 
-    /// <summary>扩展面菜单左/右键 prefix：点在释义气泡（含词/桥接）内时吞掉点击，避免穿透到菜单动作（商店购买/信件翻页/接任务等）。</summary>
-    private static bool BeforeExtendedMenuClick(int x, int y)
+    /// <summary>
+    /// 扩展面菜单左键 prefix：星标命中时先 toggle（收藏/取消，立即写盘）并吞掉；
+    /// 否则点在释义气泡（含词/桥接）内时吞掉，避免穿透到菜单动作（商店购买/信件翻页/接任务等）。
+    /// </summary>
+    private static bool BeforeExtendedMenuLeftClick(int x, int y)
+    {
+        ExtendedTextOverlay? overlay = instance?.extendedOverlay;
+        if (overlay == null)
+        {
+            return true;
+        }
+
+        if (overlay.TryToggleStar(x, y))
+        {
+            return false;
+        }
+
+        return !overlay.IsPointerOnBubble(x, y);
+    }
+
+    /// <summary>扩展面菜单右键 prefix：只吞不 toggle（星标仅响应左键，与对话路径一致）。</summary>
+    private static bool BeforeExtendedMenuRightClick(int x, int y)
     {
         return instance?.extendedOverlay?.IsPointerOnBubble(x, y) != true;
     }
