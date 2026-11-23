@@ -8,10 +8,10 @@
 |---|---|
 | 阶段 ID | `3b-2` |
 | 分支 | `stage/3b-2-billboard` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-23 / — |
-| 执行 Agent | `<待派发>` |
-| 评审 Agent | `<待派发>` |
+| 状态 | `MERGED` |
+| 开始 / 结束 | 2026-11-23 / 2026-11-24 |
+| 执行 Agent | `exec-3b2` |
+| 评审 Agent | `review-3b2` |
 
 ## 1. Packet（主控填写）
 
@@ -119,11 +119,12 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/3b-2-billboard` = 源码 1 文件（`ExtendedTextOverlay.cs` 5+/2-）+ 阶段报告 1 文件；无 bin/obj/dist、无 manifest/csproj/版本号。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，`bin\Debug` 与 `Mods\BilingualLearning` DLL SHA256 一致。
+- 用户实机：**通过**（公告板任务描述可查词、长描述遮挡可接受、日历季节名可查、Off 无行为）。
+- 用户反馈（与本次无关、已记录）：日历里悬停 `Fall` 显示「落下，爱上」而非「秋天」——同形多义词义项选择问题，见 `docs/ai/BUG_PATTERNS.md` #22 与 `docs/requirements/需求规格说明.md` §10-3。
+- 合并提交：`d6b5ac5`（--no-ff，父 `7455b74`）。
+- 后续动作：阶段 3b-3（`ShippingMenu` + `ItemListMenu`）；随后 3b-4 `ShopMenu`（tooltip 路径）。
 
 ## 5. 经验沉淀（可选）
 
