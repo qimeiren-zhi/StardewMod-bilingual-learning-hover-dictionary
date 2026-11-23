@@ -84,6 +84,23 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 - 构建连续 2 次失败 → BLOCKED
 ```
 
+## 1.1 修复轮范围（2026-11-24，用户实机打回第 1 轮）
+
+> 白名单本身通过；以下 2 个问题需要修，允许本轮临时扩大 IN_SCOPE（只加 `ModEntry.cs`、`ExtendedTextOverlay.cs`）。
+
+**问题 A：商店 F1 打开的是店长问候语卡片，不是商品**
+- 证据（Cecil + 日志）：`ShopMenu.draw` 顺序为「物品 tooltip（`drawToolTip` → 内部 `drawHoverText`）→ base.draw → 头像/问候框 → `drawHoverText(portraitPersonDialogue)` IL_0C80」；现有 `AfterDrawHoverText` 只缓存**最后一次**调用，故被问候语覆盖。
+- 修法（A'，最小）：`ModEntry.AfterDrawHoverText` 中，当 `Game1.activeClickableMenu is ShopMenu` 且 `__args[9]` 不是 `Item`（问候语调用）时**不覆盖**缓存；保留物品 tooltip 的 args。
+- 验收：商店悬停商品按 F1 → 卡片标题/描述 = 该商品；Joja（无问候语）仍正常；其它菜单 F1 行为不变。
+
+**问题 B：Joja 商店气泡盖住光标**
+- 现象：悬停商品名出气泡后鼠标移入气泡，光标画在气泡下方（截图 3）。
+- 已核实：`RenderedActiveMenu` 事件顺序为 menu.draw（含 drawMouse）→ 我方气泡 → `ExtendedTextOverlay.DrawCursor`，静态顺序本应正确，需加固。
+- 修法（B'）：`ExtendedTextOverlay.DrawCursor` 改为显式 `drawMouse(b, ignore_transparency: true, Game1.mouseCursor)`（避免 `Game1.mouseCursorTransparency` 影响）。
+- 若加固后仍复现：在 `DebugRects`（F10）开启时输出一次 `[诊断] cursor` 日志（菜单类型 / transparency / mouseCursor / hardwareCursor），供定位；不要改气泡布局或命中逻辑。
+
+**问题 C（不修，记录）**：气泡内移动时游戏 tooltip 按光标重算下一行 —— 用户认为可接受，已记入 `docs/requirements/需求规格说明.md` §10-4。
+
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
