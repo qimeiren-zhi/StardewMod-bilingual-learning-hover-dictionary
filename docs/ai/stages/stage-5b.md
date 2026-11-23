@@ -103,7 +103,7 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE
-STAGE: 5b   BRANCH: stage/5b-star   COMMITS: 1 个（本提交，hash 见 git log）
+STAGE: 5b   BRANCH: stage/5b-star   COMMITS: 2 个（32ddccc + 本修复提交）
 SUMMARY: 扩展文本面气泡复用对话路径的 Vocabulary 与 BubbleRenderer，显示星标并支持左键收藏/取消（立即写盘）；左键先 toggle 星标再吞，右键只吞不 toggle；ExtendLookup=Off 零行为变化。
 FILES:
 - src/BilingualLearning/ExtendedTextOverlay.cs — Init 接入 Vocabulary；记录命中行文本；showStar:true；新增 IsPointerOnStar/TryToggleStar（toggle 后立即写盘）。
@@ -114,11 +114,11 @@ FILES:
 - docs/ai/DECISIONS.md — 追加决策 #20。
 VERIFY:
 - build: 0 error（-p:EnableModDeploy=false；未部署，游戏运行中只编译）
-- checks: git diff --stat 仅 4 个源码文件 + 2 个文档，⊆ IN_SCOPE；左键 prefix 先 TryToggleStar 后 IsPointerOnBubble；右键 prefix 不调用 TryToggleStar；Off 时 IsEnabled=false → 无气泡/wordRects 清空，两个 prefix 均放行；toggle 走 Vocabulary.Add/Remove（内部 Save→WriteJsonFile 立即写盘）。
-- user_tests: 1) 信件/任务日志悬停词出现星标，左键点击收藏（变亮），重开菜单仍亮；2) 再点取消（变灰），F9 导出能看到/看不到该词且 Sentence 为所在行；3) 点气泡释义/背景不 toggle 也不触发底层，右键点气泡不 toggle；4) 订单板/木匠/任务板/商店星标可点且不误触接单/建造/购买；5) ExtendLookup=Off 无气泡无星标、点击与原生一致，对话与 F1 卡片星标不变。
+- checks: git diff --stat 仅 4 个源码文件 + 2 个文档，⊆ IN_SCOPE；左键 prefix 先 TryToggleStar 后 IsPointerOnBubble；右键 prefix 不调用 TryToggleStar；Off 时 IsEnabled=false → 无气泡/wordRects 清空，两个 prefix 均放行；toggle 走 Vocabulary.Add/Remove（内部 Save→WriteJsonFile 立即写盘）。**修复轮（问题 E）**：`IsPointerOnBubble` 判定收窄为「HasBubble + 菜单守卫 + bubbleLayout.BubbleBox」，词矩形/桥接矩形不再拦截点击；`UpdateAndDraw` 的「气泡保持显示」连通判定（词 ∪ 气泡 ∪ 桥接）保持不变；`TryToggleStar`/`IsPointerOnStar` 与 8 菜单 prefix 不变；构建 0 error（-p:EnableModDeploy=false，未部署）。
+- user_tests: 1) 信件/任务日志悬停词出现星标，左键点击收藏（变亮），重开菜单仍亮；2) 再点取消（变灰），F9 导出能看到/看不到该词且 Sentence 为所在行；3) 点气泡释义/背景不 toggle 也不触发底层，右键点气泡不 toggle；**点词本身/桥接区放行**（任务日志进任务面板、信件翻页、商店正常购买/接单）；4) 订单板/木匠/任务板/商店星标可点且不误触接单/建造/购买；5) ExtendLookup=Off 无气泡无星标、点击与原生一致，对话与 F1 卡片星标不变。
 DECISIONS: #20 扩展面星标复用对话路径的 Vocabulary 与气泡布局（已追加）。
 PITFALLS: none（未出现新可复现坑；`SpriteWordHit` 新增字段纯附加，不影响对话路径）。
-RISKS: 星标使气泡宽 34px，极窄视口/超长释义时 ComputeLayout 只把 x 钳回视口，width 超视口未处理（既有问题，可接受）；Sentence 取捕获行整行（多行段落含 ^，经 CleanSentence 变空格），与对话「当前整句」粒度略有差异；未实机验证，需用户按 USER_TESTS 验收。
+RISKS: 星标使气泡宽 34px，极窄视口/超长释义时 ComputeLayout 只把 x 钳回视口，width 超视口未处理（既有问题，可接受）；Sentence 取捕获行整行（多行段落含 ^，经 CleanSentence 变空格），与对话「当前整句」粒度略有差异；**修复轮后仅气泡矩形吞点击**：点词/桥接按原生逻辑走，气泡压住正文词时点击会穿过气泡命中下方原生控件（用户明确期望，非缺陷）；尚未实机复测问题 E，需用户按 USER_TESTS 第 3 条验收。
 DOCS: docs/ai/DECISIONS.md #20；本文件 §2。
 NEXT_READY: yes — 构建 0 error，diff ⊆ IN_SCOPE，等待主控评审/用户实机验收。
 ```

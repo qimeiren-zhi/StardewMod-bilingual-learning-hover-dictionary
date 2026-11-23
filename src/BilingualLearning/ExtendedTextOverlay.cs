@@ -239,8 +239,8 @@ public class ExtendedTextOverlay
     }
 
     /// <summary>
-    /// 光标是否落在释义气泡内（含词矩形与桥接矩形）。
-    /// 供菜单侧吞掉点击使用，避免「气泡盖住商品行时点击穿透、误购下一行商品」。
+    /// 光标是否落在释义气泡矩形内（**只含气泡，不含词矩形与桥接矩形**）。
+    /// 供菜单侧吞掉点击使用：只有气泡本身（含星标）拦截点击，词/桥接区域放行给原生逻辑（进任务/翻页/接单/购买）。
     /// 同时校验气泡仍属于当前活动菜单，避免切换菜单后一帧内旧气泡误吞点击。
     /// </summary>
     public bool IsPointerOnBubble(int x, int y)
@@ -248,9 +248,7 @@ public class ExtendedTextOverlay
         var point = new Point(x, y);
         return this.HasBubble
             && ReferenceEquals(this.trackedMenu, Game1.activeClickableMenu)
-            && (this.bubbleLayout.BubbleBox.Contains(point)
-                || this.hoveredWordBox.Contains(point)
-                || this.bridgeRect.Contains(point));
+            && this.bubbleLayout.BubbleBox.Contains(point);
     }
 
     /// <summary>左键是否落在星标上（仅判定，不改状态）。</summary>
