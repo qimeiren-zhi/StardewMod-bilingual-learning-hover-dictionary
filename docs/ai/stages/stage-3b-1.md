@@ -8,10 +8,10 @@
 |---|---|
 | 阶段 ID | `3b-1` |
 | 分支 | `stage/3b-1-carpenter` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-23 / — |
-| 执行 Agent | `<待派发>` |
-| 评审 Agent | `<待派发>` |
+| 状态 | `MERGED` |
+| 开始 / 结束 | 2026-11-23 / 2026-11-23 |
+| 执行 Agent | `exec-3b1` |
+| 评审 Agent | `review-3b1` |
 
 ## 1. Packet（主控填写）
 
@@ -119,11 +119,14 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/3b-1-carpenter` = 源码 1 文件（`ExtendedTextOverlay.cs` 5+/2-）+ 阶段报告 1 文件；无 bin/obj/dist、无 manifest/csproj/版本号（评审注：§2 写「1 文件」实为源码 1 文件/分支 2 文件，此处为准）。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，`bin\Debug` 与 `Mods\BilingualLearning` DLL SHA256 一致。
+- 用户实机：**通过**（其余正常）。用户反馈 3 条，见下：
+  1. 连字符复合词无法识别（如 `coop-dwelling`）——**既有分词限制，非本阶段回归**，已记入需求/已知问题；
+  2. 蓝图描述上方的农场建筑标题（`Coop` / `Barn` 等）需要可查词——**新需求**，该标题走 `SpriteText.drawStringWithScrollCenteredAt`，被现有 `drawBGScroll != -1` 闸门跳过，需专门阶段处理；
+  3. 询问「鼠标停在描述词上时如何切换蓝图」——已由只读研究核实（见 `docs/ai/HANDOFF.md` 3b-1 段）。
+- 合并提交：`5987765`（--no-ff，父 `a6a07a8`）。
+- 后续动作：阶段 3b-2（小镇任务板 `Billboard`）；「scroll 居中标题可查词」单列为后续需求（影响木匠标题、订单板 ChooseOne 横幅等）。
 
 ## 5. 经验沉淀（可选）
 
