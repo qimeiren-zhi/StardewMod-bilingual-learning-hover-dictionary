@@ -86,14 +86,14 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ```text
 STATUS: DONE
 STAGE: 3c   BRANCH: stage/3c-junimo-mastery   COMMITS: 本提交（代码 + 本报告同一提交）
-SUMMARY: ExtendedTextOverlay.AllowedMenus 新增 JunimoNoteMenu、MasteryTrackerMenu 两行并同步类注释；旧 8 个白名单保持原样，无新增 hook。点击吞掉/星标经 SupportedMenus（ModEntry.cs:94）自动覆盖，无需改 TextCapture/布局。用户实机反馈后补修复轮：未读 Junimo 文（junimo 乱码字体，`__args[9]`）在 `AfterSpriteTextDrawString` 直接不注册捕获。构建 0 error（EnableModDeploy=false，未部署）。
+SUMMARY: ExtendedTextOverlay.AllowedMenus 新增 JunimoNoteMenu、MasteryTrackerMenu 两行并同步类注释；旧 8 个白名单保持原样，无新增 hook。点击吞掉/星标经 SupportedMenus（ModEntry.cs:94）自动覆盖，无需改 TextCapture/布局。用户实机反馈后补修复轮：未读 Junimo 文（junimo 乱码字体，`__args[9]`）在 `AfterSpriteTextDrawString` 直接不注册捕获。构建 0 error（EnableModDeploy=false，未部署）。发布前按用户要求移除 `MasteryTrackerMenu` 白名单（未实机测试，不随本次发布实装）；代码/研究结论保留，待补测通过后单独恢复。
 FILES:
 - src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 加两行 + 类注释补 3c
 - src/BilingualLearning/ModEntry.cs — 修复轮：`SpriteText.drawString` 的 junimoText 为 true 时不注册捕获
 - docs/ai/stages/stage-3c.md — 填 §2 执行报告
 VERIFY:
 - build: 0 error（1 warning CS9057 无害）；-p:EnableModDeploy=false，未部署
-- checks: git diff --stat 仅上述文件；AllowedMenus 数量 8→10 且旧 8 项逐项保留；ModEntry.cs:94 遍历 SupportedMenus 自动注册点击吞掉；junimo 判断用 `is bool` 且位于长度检查（<12 已 return）之后
+- checks: git diff --stat 仅上述文件；AllowedMenus 数量 8→10 且旧 8 项逐项保留（mastery-defer 收口后为 9 项，Junimo 保留）；ModEntry.cs:94 遍历 SupportedMenus 自动注册点击吞掉；junimo 判断用 `is bool` 且位于长度检查（<12 已 return）之后
 - user_tests:
   1. JunimoNoteMenu：悬停区域名/当前收集包名出气泡，移入气泡不消失
   2. 未读 Junimo 文（junimo 乱码字体）：悬停**不出**气泡（修复轮行为）
