@@ -2,36 +2,33 @@
 
 > 本文件描述「当前正在做/刚完成」的任务；新会话若接手，先确认下面「任务」是否仍是当前任务。
 
-- **任务**：归档 2026-11-23 会话成果 + 文档同步 + 落地「开发模式」协作文档（**已完成并提交**）。下一任务：阶段 3a（特殊订单板），按 `DEV_MODE.md` 派发给阶段 SubAgent。
-- **本轮交付**：
-  - 阶段 0/1/2 全部实机验证通过：信件、秘密纸条、日志残页、任务日志可悬停查词；
-  - 修复四类对齐问题（前缀 `MeasureString`、阴影去重、`^` 换行、换行原点）；
-  - `F10` 调试键（矩形 + `[诊断]` 日志）落地并写入 README/HANDOFF 说明；
-  - 文档同步：README、CHANGELOG、需求 §9、计划 §8、AGENTS、DECISIONS 16~18、BUG_PATTERNS 18~21、HANDOFF、`HANDOVER_2026-11-23.md`。
-- **状态**：构建 0 error；已部署到游戏（2026-11-23 20:20:27）；已提交 `e818b9f`（代码）+ `b2fae14`（文档）+（本组）`docs: 开发模式`；`dist/` 未重建。
-- **开发模式**：本轮新增 `docs/ai/DEV_MODE.md`、`MAIN_AGENT_PROMPT.md`、`SUBAGENT_PROMPTS.md`、`stages/TEMPLATE.md`；阶段 3a 的 Packet 示例已在 `SUBAGENT_PROMPTS.md` §7。
+- **任务**：阶段 3a（特殊订单板 `SpecialOrdersBoard`）**已完成并合并**（`ceb0a46`）。下一任务：阶段 3b（商店/木匠/日历/Billboard/发货箱/ItemList），按 `DEV_MODE.md` 派发给阶段 SubAgent。
+- **本轮交付（3a）**：
+  - `src/BilingualLearning/ExtendedTextOverlay.cs`：`AllowedMenus` 增加 `typeof(SpecialOrdersBoard)`（唯一源码改动，另有类注释一行）；
+  - 订单标题/描述/剩余天数/奖励复用现有 SpriteFont 管线（9 参 `DrawString`、`\n` 多行、缩字 `scale`），未新增 hook、未改布局；
+  - 评审 PASS（`docs/ai/stages/review-3a.md`）；用户实机通过（多行/缩字贴合、切换订单不残留）。
+- **状态**：构建 0 error（含部署，Mods DLL 与 bin 一致）；`stage/3a-orders-board` 已 `--no-ff` 合并；`dist/` 未重建；版本仍 `0.5.0`。
+- **已定行为**：`Extended lookup=Off` 是**总闸门**，关闭后信件/任务日志/订单板全部不查词（对话、F1 卡片不受影响）；不再按「遗留 bug」排查。
 - **非范围**：
-  - 不提交、不发布（等用户决定版本与打包时机）；
-  - 不做阶段 3/4/5 的功能；不改 `WordOverlay`/`KnowledgeCardMenu` 既有语义；
-  - 不合并 `backup/other-agent-807c988`。
-- **验收标准**：
-  1. 文档与源码一致（验收命令、快捷键、配置项、白名单、已知限制）；
-  2. `dotnet build` 0 error；
-  3. 新会话按 HANDOFF 能直接进入阶段 3，无需重新踩本轮四个对齐坑。
+  - 不做阶段 3b/3c 的功能；不改 `WordOverlay`/`KnowledgeCardMenu` 既有语义；
+  - 不提交、不发布、不升版本、不动 `dist`（等用户决定版本与打包时机）。
+- **验收标准（3b 起沿用）**：
+  1. 改动文件 ⊆ Packet IN_SCOPE；
+  2. `dotnet build -p:EnableModDeploy=false` 0 error；
+  3. 评审 PASS；`stage-<id>.md` 报告完整；用户实机 3~5 条通过后合并。
 - **相关文件**：
-  - 新增实现：`src/BilingualLearning/{TextCapture,SpriteTextWordLayout,ExtendedTextOverlay}.cs`
-  - 交接：`docs/ai/HANDOFF.md`、`docs/ai/HANDOVER_2026-11-23.md`、`docs/ai/DECISIONS.md`、`docs/ai/BUG_PATTERNS.md`
-  - 用户文档：`README.md`、`CHANGELOG.md`
-- **相似结构检查点**（阶段 3 开工前先看）：
-  - 捕获：`TextCapture.RegisterSpriteText/RegisterSpriteFont`、`ModEntry.ShouldCapture`；
-  - 白名单：`ExtendedTextOverlay.AllowedMenus`（新增文本面只改这里 + 验收）；
-  - 布局：`SpriteTextWordLayout.Build`（像素字体）、`ExtendedTextOverlay.BuildSpriteFontHits`（SpriteFont，前缀测量）；
-  - 裁剪/残留：`RebuildWordRects` 的菜单矩形裁剪 + `IsHoveredWordStillPresent`。
+  - 3a 记录：`docs/ai/stages/stage-3a.md`、`docs/ai/stages/review-3a.md`
+  - 实现：`src/BilingualLearning/{ExtendedTextOverlay,TextCapture,SpriteTextWordLayout,ModEntry}.cs`
+  - 交接：`docs/ai/HANDOFF.md`、`docs/ai/DEV_MODE.md`、`docs/ai/SUBAGENT_PROMPTS.md`
+- **3b 开工前检查点**：
+  - 白名单：`ExtendedTextOverlay.AllowedMenus`；闸门：`ModEntry.ShouldCapture` / `IsEnabled`；
+  - 布局：`SpriteTextWordLayout.Build`（像素字体）、`ExtendedTextOverlay.BuildSpriteFontHits`（SpriteFont 前缀测量 + 多行 + scale）；
+  - 裁剪/残留：`RebuildWordRects` 的菜单矩形裁剪 + `IsHoveredWordStillPresent`；
+  - 顺带同步 GMCM `Extended lookup` 描述与 `ModEntry.cs:308` 注释（评审 NON_BLOCKING）。
 - **验证命令**：
   - 构建：`$env:DOTNET_ROOT='C:\Users\zhiqi\dotnet'; C:\Users\zhiqi\dotnet\dotnet.exe build "src\BilingualLearning\BilingualLearning.csproj" -c Debug`
   - 仅编译：加 `-p:EnableModDeploy=false`（游戏运行时必须加）
   - 日志：SMAPI 控制台 / `%APPDATA%\StardewValley\ErrorLogs\SMAPI-latest.txt`
 - **风险与回滚**：
-  - 未提交改动可整体 `git checkout -- .` + 删除三个新增文件回滚；
-  - 扩展功能默认关闭，回滚风险仅限开启后的体验；
+  - 3a 已合并；如需回滚，`git revert -m 1 ceb0a46`（只影响白名单一行与文档）；
   - 部署需关闭游戏（DLL 锁）。

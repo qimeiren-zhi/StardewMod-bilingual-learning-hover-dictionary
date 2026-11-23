@@ -1,6 +1,6 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-23（晚）。基线：`master` @ `b2fae14`（本轮代码提交 `e818b9f` + 文档提交 `b2fae14`），版本 `0.5.0`。
+> 更新时间：2026-11-23（深夜）。基线：`master` @ `ceb0a46`（阶段 3a 合并；此前 `b2fae14` + 开发模式 `81968be`），版本 `0.5.0`。
 > `dist/` 未重建；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
 > 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`；协作模式见 `docs/ai/DEV_MODE.md`。
@@ -13,7 +13,7 @@
   - 阶段 1：**信件 / 秘密纸条 / 日志残页**悬停查词；
   - 阶段 2：**任务日志（QuestLog）**悬停查词 + 滚动/翻页不残留 + 命中裁剪；
   - 对齐问题全部修复（见「本轮修复」），用户确认「结果完美」。
-- 目标状态：扩展功能已可用（默认关闭、GMCM 开启），下一步是阶段 3（特殊订单板/菜单长尾）。
+- 目标状态：阶段 3a（特殊订单板）已完成并合并；下一步是阶段 3b（菜单长尾：商店/木匠/日历/Billboard/发货箱/ItemList）。
 
 ## 本轮成果（相对 `b53598d`）
 
@@ -24,6 +24,13 @@
 | 修复 | 矩形逐词右漂（前缀 `MeasureString`）、阴影被优先捕获（保留正文）、`^` 换行、`width=-1` 换行原点 |
 | 调试工具 | `F10` 词矩形可视化 + `[诊断]` 日志（不进 GMCM，默认关） |
 | 文档 | README（含「测试键 F10 的用意」）、CHANGELOG、需求 §9、计划 §8、AGENTS、DECISIONS 16~18、BUG_PATTERNS 18~21 |
+
+## 阶段 3a（2026-11-23 深夜，已合并）
+
+- 范围：`SpecialOrdersBoard` 加入 `ExtendedTextOverlay.AllowedMenus`（一行）；订单正文为 `Utility.drawTextWithShadow` 的 9 参 `DrawString`，多行 `\n`/缩字 `scale` 复用现有 SpriteFont 管线，**无新增 hook**。
+- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-3a.md`）；用户实机通过（订单板可查词、多行/缩字贴合、切换订单不残留、Off 全局不查词为设计行为）。
+- 合并：`ceb0a46`；阶段记录 `docs/ai/stages/stage-3a.md`。
+- 遗留（非阻断）：GMCM `Extended lookup` 描述与 `ModEntry.cs:308` 注释仍只写 letters/quest log，未含订单板，**3b 时同步**。
 
 ## 调试键 `F10` 的用意（重要）
 
@@ -103,7 +110,7 @@
 3. **扩展面不支持星标/点击**（阶段 5）。
 4. **单字母词矩形略宽**：宽度用 `MeasureString(word)`（含右留白），约多 4px；点击/悬停仍准确，视觉上盒子比字形宽一点（可接受，若要求像素级可再收紧）。
 5. **世界层未接**（头顶气泡、节日/矿洞横幅）。
-6. **SpecialOrdersBoard/商店/日历等**未接（阶段 3）。
+6. **商店/木匠/日历/Billboard/发货箱/ItemList（阶段 3b）与 JunimoNote（3c）**未接；特殊订单板已于 3a 接入。
 7. **`dist/` 发布包未重建**：manifest 已改，发布前必须重新打包。
 
 ## 下一步 TODO
@@ -111,7 +118,7 @@
 > 协作方式：2026-11-23 起建议用**开发模式**（主控 Agent + 阶段 SubAgent）推进，见 `docs/ai/DEV_MODE.md`、`docs/ai/MAIN_AGENT_PROMPT.md`、`docs/ai/SUBAGENT_PROMPTS.md`。代码阶段严格串行，只有只读研究/评审可并行。
 
 1. **【已完成】** 本轮已提交：`e818b9f`（代码）+ `b2fae14`（文档）；`git status` 干净。
-2. **阶段 3**：`SpecialOrdersBoard` → 商店/木匠/日历/Billboard/发货箱/ItemList → `JunimoNote`；复用 `TextCapture` + 白名单，按面验收。
+2. **阶段 3b**：商店/木匠/日历/Billboard/发货箱/ItemList；复用 `TextCapture` + 白名单，按面验收（3a 订单板已完成并合并）。随后 3c：`JunimoNote` / 精通追踪。
 3. **阶段 4**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需要世界→屏幕坐标换算。
 4. **阶段 5**：扩展面星标收藏/点击吞掉（谨慎，避免与菜单交互冲突）。
 5. **发布前**：重建 `dist/BilingualLearning 0.5.0.zip`（或升 0.6.0，待定），补 GitHub `UpdateKeys`，Nexus 勾 `AI Assisted`。
@@ -120,6 +127,6 @@
 
 1. 【待确认】本轮扩展功能是否升版本到 `0.6.0`（当前 manifest/csproj 仍 0.5.0，dist 未重建）。
 2. 【待确认】是否把「单字母矩形右留白」收紧到字形边缘（会略减点击容差）。
-3. 【待确认】阶段 3 顺序：先订单板还是先商店/日历等短文本菜单。
+3. 【已定】阶段 3 顺序：订单板（3a 已完成）→ 菜单长尾（3b）→ `JunimoNote`（3c）。
 4. 【待确认】GitHub 仓库地址（`UpdateKeys` 目前只有 `Nexus:55803`）。
 5. 【待确认】知识卡片图标是否要包进面板内（旧问题，未做）。

@@ -6,10 +6,10 @@
 |---|---|
 | 阶段 ID | `3a` |
 | 分支 | `stage/3a-orders-board` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-23 / — |
-| 执行 Agent | `<待派发>` |
-| 评审 Agent | `<待派发>` |
+| 状态 | `MERGED` |
+| 开始 / 结束 | 2026-11-23 / 2026-11-23 |
+| 执行 Agent | `exec-3a` |
+| 评审 Agent | `review-3a` |
 
 ## 1. Packet（主控填写）
 
@@ -124,11 +124,11 @@ EVIDENCE: 详见 docs/ai/stages/review-3a.md（评审提交 9c4a4ac）；构建 
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/3a-orders-board` = `review-3a.md`(新增 22) + `stage-3a.md`(新增 137) + `ExtendedTextOverlay.cs`(5+/2-)；无 bin/obj/dist、无 manifest/csproj/版本号。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error（仅既有 CS9057 警告）；主控已部署到 `Mods\BilingualLearning`。
+- 用户实机：**通过**。订单板描述可悬停查词；多行/缩字对齐、切换订单不残留、Off 时全局不查词均符合预期（用户确认 `Extended lookup=Off` 关闭信件/任务日志为设计行为）。
+- 合并提交：`ceb0a46`（--no-ff，父 `533c527`）。
+- 后续动作：进入阶段 3b（商店/木匠/日历/Billboard/发货箱/ItemList）；顺手同步 GMCM 文案与 `ModEntry.cs:308` 注释（评审 NON_BLOCKING 3）。
 
 ## 5. 经验沉淀（可选）
 
