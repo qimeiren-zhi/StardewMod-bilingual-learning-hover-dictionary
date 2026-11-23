@@ -17,7 +17,7 @@ D:\Project\星露谷双语mod\
 │  ├─ TooltipTextCapture.cs       # 重放 tooltip 时捕获 DrawString 文本
 │  ├─ TextCapture.cs              # 每帧文本捕获注册表（SpriteText + 4 个 DrawString 重载）
 │  ├─ SpriteTextWordLayout.cs     # SpriteText 词布局（对话/信件/日志共用）
-│  ├─ ExtendedTextOverlay.cs      # 扩展文本面查词（信件/任务日志，只读气泡 + F10 调试）
+│  ├─ ExtendedTextOverlay.cs      # 扩展文本面查词（9 菜单：信件/任务日志/订单板/木匠/任务板/发货箱/商店/收集包；星标 + 点击吞掉 + F10 调试）
 │  ├─ DictionaryData.cs           # 词典加载（v2 四列）
 │  ├─ Vocabulary.cs               # 生词本（立即写盘、按存档隔离）
 │  ├─ VocabData.cs                # 生词本数据模型
@@ -25,7 +25,7 @@ D:\Project\星露谷双语mod\
 │  ├─ ChineseFont.cs              # FontStashSharp 中文字体
 │  ├─ ModConfig.cs                # 配置模型
 │  ├─ IApi.cs                     # GMCM 最小接口
-│  ├─ manifest.json               # mod 清单（版本 0.5.0）
+│  ├─ manifest.json               # mod 清单（版本 0.6.0）
 │  ├─ BilingualLearning.csproj    # net6.0 + ModBuildConfig
 │  └─ assets\                     # dictionary.tsv / Font.ttf / bubble_*.png
 ├─ tools\                         # 辅助工具（build-dict 等）
@@ -52,7 +52,7 @@ D:\Project\星露谷双语mod\
 
 - 游戏：Stardew Valley **1.6.15**（`D:\Program Files (x86)\Steam\steamapps\common\Stardew Valley`）
 - SMAPI：**4.5.2**
-- `manifest.json`：`MinimumApiVersion 4.0.0`、`MinimumGameVersion 1.6.15`、`UniqueID MarenQi.BilingualLearning`、`Version 0.5.0`、`UpdateKeys ["Nexus:55803"]`
+- `manifest.json`：`MinimumApiVersion 4.0.0`、`MinimumGameVersion 1.6.15`、`UniqueID MarenQi.BilingualLearning`、`Version 0.6.0`、`UpdateKeys ["Nexus:55803"]`
 - .NET：**6.0.428 SDK**，装在 `C:\Users\zhiqi\dotnet`（**不在 PATH**）
 - 依赖：`Pathoschild.Stardew.ModBuildConfig 4.4.0`、`FontStashSharp.MonoGame 1.6.2`
 - GMCM：软依赖（`Dependencies[IsRequired:false]`），运行时 `GetApi` 动态代理
@@ -108,8 +108,9 @@ C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\Biling
   - `IClickableMenu.drawHoverText`（postfix）→ 捕获 tooltip 参数
   - `SpriteBatch.DrawString`（3 个重载 postfix）→ 捕获文本位置
   - `SpriteBatch.DrawString`（4 个重载 postfix）→ 扩展文本面捕获（`TextCapture`）
-  - `SpriteText.drawString`（postfix）→ 扩展文本面捕获（信件/任务日志）
-- 扩展文本面白名单在 `ExtendedTextOverlay.AllowedMenus`；关闭 `ExtendLookup` 且未开 F10 调试时零捕获开销。
+  - `SpriteText.drawString`（postfix）→ 扩展文本面捕获；`drawBGScroll != -1`（卷轴）与 `junimoText=true`（未读 Junimo 乱码）不捕获
+  - `SupportedMenus` 中各菜单自身的 `receiveLeftClick`/`receiveRightClick`（prefix，8 左 + 4 右）→ 气泡矩形内吞点击；左键先尝试星标 toggle
+- 扩展文本面白名单在 `ExtendedTextOverlay.AllowedMenus`（9 类：LetterViewerMenu / QuestLog / SpecialOrdersBoard / CarpenterMenu / Billboard / ShippingMenu / ItemListMenu / ShopMenu / JunimoNoteMenu；Mastery 未实装）。`ExtendLookup=Off` 且未开 F10 调试时零捕获开销。
 - **禁止**在 `Entry` 调 `ReadSaveData` 或 `GetApi`（见 BUG_PATTERNS）。
 
 ### 存档兼容
@@ -121,6 +122,7 @@ C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\Biling
 ### 配置格式
 
 - `ModConfig`：`ToggleKey=F11`、`ExportKey=F9`、`ExportLocation=Documents|Desktop|Downloads|Mod folder`、`BubbleStyle=Default|Sandy's Notes`、`LookupKey=F1`、`ExtendLookup=Off|On`（扩展文本面）、`DebugTextRectsKey=F10`。
+  - **已排期**：取消 `ExtendLookup` 开关、扩展面默认开启（需求 §10-5）；实现后 `ExtendLookup` 字段与 GMCM 选项一并移除，`TextCapture.Enabled` 闸门改为「白名单菜单 + F10 调试」。
 - 词典 v2：`word \t pos \t translation \t tag`（`DictionaryData.cs:62-64`）。
 
 ### 性能限制
@@ -143,5 +145,5 @@ C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\Biling
 9. **不要**给气泡命中只认词矩形（必须含气泡+桥接，否则鼠标进不去气泡）。
 10. **不要**给自定义菜单忘画光标（`drawMouse`）或忘 override `isWithinBounds`（否则气泡点不到）。
 11. 修改游戏内部字段/方法前，**先用 Mono.Cecil 核对**（`smapi-internal\Mono.Cecil.dll`），不要凭空猜签名。
-12. 源码与文档冲突时**以源码为准**；本文件记录的是 2026-11-23「扩展文本面」提交之后的 / v0.5.0 基线（`git log` 最新提交为准）。
+12. 源码与文档冲突时**以源码为准**；本文件记录的是 2026-11-24 / v0.6.0 基线（`git log` 最新提交为准）。
 13. **不要**用 PowerShell 的 `Get-Content`/`Set-Content` 批量改源码（PS 5.1 按 ANSI 解码 UTF-8，会损坏中文与字符串字面量）；一律用编辑工具 `edit`/`write`。

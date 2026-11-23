@@ -8,7 +8,7 @@
 |---|---|
 | 阶段 ID | `3c` |
 | 分支 | `stage/3c-junimo-mastery` |
-| 状态 | `MERGED`（Mastery 待实机） |
+| 状态 | `MERGED`（Mastery 未实装） |
 | 开始 / 结束 | 2026-11-24 / 2026-11-24 |
 | 执行 Agent | `exec-3c` |
 | 评审 Agent | `review-3c` |

@@ -2,27 +2,31 @@
 
 > 本文件描述「当前正在做/刚完成」的任务；新会话若接手，先确认下面「任务」是否仍是当前任务。
 
-- **任务**：阶段 3c（Junimo 收集包 + 精通追踪）**已合并**（`fbf1108`），**阶段 3 全部完成**。
-- **发布前硬门槛（未完成）**：
-  1. 补测 `MasteryTrackerMenu`（需满足精通条件的存档）——代码已接入、未实机，**未补测前不发布**；测试点见 `docs/ai/stages/stage-3c.md` §5。
-  2. 重建 `dist/`（当前仍是 0.5.0 旧包）；版本号 0.5.0 → 0.6.0 待定。
-- **本轮交付（3c）**：
-  - `AllowedMenus` 新增 `JunimoNoteMenu`、`MasteryTrackerMenu`；点击吞掉/星标自动覆盖；
-  - 用户要求：未读 Junimo 文（`junimoText=true`）不参与查词 → `AfterSpriteTextDrawString` 直接跳过；
-  - 评审 PASS；JunimoNote 实机通过。
-- **状态**：构建 0 error（含部署，Mods DLL 与 bin 一致）；`stage/3c-junimo-mastery` 已 `--no-ff` 合并。
-- **本次会话累计（相对 0.5.0）**：3a 订单板、3b-1 木匠、3b-2 任务板/日历、3b-3 发货箱/丢物、3b-4 商店正文、5a 点击吞掉、5b 星标、3c 收集包/精通。
-- **下一步候选**：补测 Mastery → 发布准备（版本号/`dist`/README/CHANGELOG/Nexus）→ 阶段 4 世界层（可选）。
-- **已知遗留（非阻塞）**：需求池 §10 四条（连字符分词、卷轴居中文本、同形多义词、商店 tooltip 抢焦点）；tooltip 文本可能被捕获（`BUG_PATTERNS` #13 类）；中键/滚轮、GameMenu 各页、世界层未覆盖。
-- **非范围**：不提交发布、不升版本、不动 `dist`，除非用户明确指示。
+- **任务**：**0.6.0 发布准备已完成，等待用户实机确认**（`release/0.6.0` 分支未合并）。
+- **立即要做（第一优先）**：
+  1. 收用户 0.6.0 实机 4 条结果（SMAPI 显示 0.6.0 / 扩展面查词+星标 / 商店点击与 F9 / Off 行为）；
+  2. 通过后：`git checkout master && git merge --no-ff release/0.6.0`，打 `v0.6.0` tag（可选），把 `stage-r1.md` §0 置 `MERGED`、§4 写验收结论，更新 HANDOFF/CURRENT_TASK/计划 §9；
+  3. 合入后即可发布 Nexus（上传 `dist/BilingualLearning 0.6.0.zip`，勾 `AI Assisted`）。
+- **下一开发任务（用户已提出，未排期）**：**需求 §10-5 取消 `Extended lookup` 开关、扩展面默认开启**。要点：
+  - 移除 `ModConfig.ExtendLookup` 与 GMCM 选项（`ModEntry.RegisterConfigMenu`）；
+  - `TextCapture.Enabled` 改为「白名单菜单（或 F10 调试）」；`ExtendedTextOverlay.IsEnabled` 去掉配置判断；
+  - 同步 README/CHANGELOG/Nexus、AGENTS、需求 §10-5；需实机回归对话/卡片/9 个扩展面。
+- **状态**：master `ca3de3a`（功能全齐、版本号仍 0.5.0）；`release/0.6.0` `7d24692`（版本 0.6.0 + 文案 + 报告）；游戏 Mods 已部署 0.6.0；`dist` 有 0.6.0 zip（旧 0.5.0 仍留）。
+- **已知遗留（非阻塞）**：
+  - `MasteryTrackerMenu` 未实装（未实机，白名单已移除，代码保留）；
+  - 需求池 §10：连字符分词、卷轴居中标题、同形多义词、商店 tooltip 抢焦点；
+  - 白名单菜单内 tooltip 文本可能被捕获、中键/滚轮未覆盖；
+  - 阶段 4 世界层未做（可选）。
+- **非范围**：不擅自发布/上传；不升版本号（0.6.0 已定）；不改业务逻辑（发布阶段）。
 - **验收标准（沿用）**：改动 ⊆ Packet IN_SCOPE；构建 0 error；评审 PASS；用户实机通过后合并。
 - **相关文件**：
-  - 3c 记录：`docs/ai/stages/stage-3c.md`、`review-3c.md`
-  - 交接：`docs/ai/HANDOFF.md`、`docs/ai/DEV_MODE.md`、`docs/ai/SUBAGENT_PROMPTS.md`
+  - 发布记录：`docs/ai/stages/stage-r1.md`；改动清单/会话总结：`docs/ai/HANDOVER_2026-11-24.md`
+  - 下一会话 Prompt：`docs/ai/NEXT_SESSION_PROMPT.md`
+  - 交接：`docs/ai/HANDOFF.md`、`AGENTS.md`、`docs/ai/DEV_MODE.md`、`docs/ai/SUBAGENT_PROMPTS.md`
 - **验证命令**：
   - 构建：`$env:DOTNET_ROOT='C:\Users\zhiqi\dotnet'; C:\Users\zhiqi\dotnet\dotnet.exe build "src\BilingualLearning\BilingualLearning.csproj" -c Debug`
-  - 仅编译：加 `-p:EnableModDeploy=false`（游戏运行时必须加；部署报 `IOException` 即游戏未关）
+  - 仅编译（游戏运行中必须）：加 `-p:EnableModDeploy=false`（仍会生成 zip）
   - 日志：SMAPI 控制台 / `%APPDATA%\StardewValley\ErrorLogs\SMAPI-latest.txt`
 - **风险与回滚**：
-  - 3c 已合并；回滚 `git revert -m 1 fbf1108`；
+  - 0.6.0 已部署；回滚可重新部署 0.5.0（`git checkout v0.5.0` 构建）或删除/替换 `Mods\BilingualLearning`；
   - 部署需关闭游戏（DLL 锁）。

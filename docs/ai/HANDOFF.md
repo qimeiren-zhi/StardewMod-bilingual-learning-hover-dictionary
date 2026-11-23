@@ -1,26 +1,33 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-24（凌晨）。基线：`master` @ `fbf1108`（3a、3b-1~3b-4、5a、5b、3c 合并；3c 的 Mastery 待实机），版本 `0.5.0`。
-> `dist/` 未重建；工作区干净。
+> 更新时间：2026-11-24（凌晨）。基线：`master` @ `ca3de3a`（3a、3b-1~3b-4、5a、5b、3c 全部合并；代码版本 0.5.0）；**发布分支 `release/0.6.0` 已构建但未合并、未实机确认**。
+> `dist/` 已重建 `BilingualLearning 0.6.0.zip`（与 bin 同哈希）；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
-> 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`；协作模式见 `docs/ai/DEV_MODE.md`。
+> 本次会话完整记录见 `docs/ai/HANDOVER_2026-11-24.md`；协作模式见 `docs/ai/DEV_MODE.md`。
 
 ## 当前目标
 
-- 在 0.5.0 可发布基线上，把「悬浮查词」从 `DialogueBox` 扩展到更多文本面；按文本面切片交付，不重写既有对话/卡片路径。
-- **2026-11-23 已完成并实机验证**：
-  - 阶段 0：统一文本捕获基础设施（`SpriteText.drawString` + 全部 4 个 `SpriteBatch.DrawString` 重载）；
-  - 阶段 1：**信件 / 秘密纸条 / 日志残页**悬停查词；
-  - 阶段 2：**任务日志（QuestLog）**悬停查词 + 滚动/翻页不残留 + 命中裁剪；
-  - 对齐问题全部修复（见「本轮修复」），用户确认「结果完美」。
-- 目标状态：**阶段 3 全部完成**（3a 订单板、3b-1~3b-4 菜单长尾、3c 收集包+精通）；阶段 5（5a 点击吞掉 / 5b 星标）也已完成。剩余：**Mastery 实机补测（发布前必做）**、阶段 4 世界层、发布准备。
+- 在 0.6.0 基线上继续「悬浮查词」扩展；按文本面切片交付，不重写既有对话/卡片路径。
+- **2026-11-24 本次会话已完成并实机验证**：阶段 3a 订单板、3b-1 木匠、3b-2 任务板/日历、3b-3 发货箱/丢物、3b-4 商店正文、5a 点击吞掉、5b 星标、3c 收集包；共 9 个白名单菜单。
+- **当前状态**：全部功能已合入 master；`release/0.6.0` 已打好 0.6.0 包并部署到游戏，**等待用户实机确认 0.6.0**，通过后合并 release 分支。
+- **待办**：0.6.0 实机确认 → 合并 release → 需求 §10-5（取消 `Extended lookup` 开关、默认开启）→ Mastery 补测 → 阶段 4 世界层（可选）。
 
-## 阶段 3c（2026-11-24 凌晨，已合并；Mastery 待实机）
+## 阶段 R1：0.6.0 发布准备（2026-11-24，分支未合并）
 
-- 范围：`JunimoNoteMenu`、`MasteryTrackerMenu` 加入 `AllowedMenus`（两行）；点击吞掉/星标由 `SupportedMenus` 自动覆盖。
-- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-3c.md`）；用户实机：**JunimoNote 通过**（可读英文后区域名/包名/正文正常），**MasteryTrackerMenu 未测**（存档条件不足）——发布前必须补测。
+- 分支 `release/0.6.0`（3 个提交：`8819dd9` Packet、`dc6426e` 版本+文案、`7d24692` 报告）；`master` 合并提交待用户确认后做。
+- 版本：`manifest.json` / `csproj` / `CHANGELOG` 顶部均 0.6.0；CHANGELOG `[0.6.0] - 2026-11-24`；README/Nexus 文案同步（9 菜单 + 星标 + 点击安全）。
+- 包：`dist/BilingualLearning 0.6.0.zip`（SHA256 `D2134BA5…DBF00A`，与 `bin\Debug` 同哈希）；`Mods\BilingualLearning` 已部署 0.6.0。
+- **Mastery 未实装**：白名单已移除（`388c170`），发布文档无「Mastery/精通」字样；代码与研究结论保留，待补测后恢复。
+- **发布前必做**：用户实机 4 条（SMAPI 显示 0.6.0 / 扩展面查词+星标 / 商店点击与 F9 / Off 行为）→ 通过后合并 `release/0.6.0`（`--no-ff`），必要时打 `v0.6.0` tag。
+
+
+## 阶段 3c（2026-11-24 凌晨，已合并；Mastery 已移除）
+
+- 范围：`JunimoNoteMenu` 加入 `AllowedMenus`；点击吞掉/星标由 `SupportedMenus` 自动覆盖。
+- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-3c.md`）；用户实机：**JunimoNote 通过**（可读英文后区域名/包名/正文正常）。
+- `MasteryTrackerMenu` 曾接入但**未实机**（存档条件不足），按用户要求**已从白名单移除、不随 0.6.0 发布**（`388c170`）；代码与研究结论保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
 - 修复轮：用户要求「未读 Junimo 文（junimo 字体）不出气泡」→ `AfterSpriteTextDrawString` 检测 `junimoText` 直接跳过捕获（`7582b3d`）。
-- 合并：`fbf1108`；阶段记录 `docs/ai/stages/stage-3c.md`。
+- 合并：`fbf1108`（+`ca3de3a` 移除 Mastery）；阶段记录 `docs/ai/stages/stage-3c.md`。
 
 
 ## 阶段 5b（2026-11-24 凌晨，已合并）
@@ -36,7 +43,7 @@
 - 范围：把 3b-4 的 `ShopMenu` 专用「气泡区域吞点击」泛化到 8 个白名单菜单：遍历 `ExtendedTextOverlay.SupportedMenus`，只 patch 自身 override（8 左键 + 4 右键：LetterViewerMenu/SpecialOrdersBoard/Billboard/ShopMenu），统一 prefix + `IsPointerOnBubble`；加 `trackedMenu` 守卫。
 - 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5a.md`）；用户**通过**；合并 `63003be`。
 - 记录：`BUG_PATTERNS.md` #25（`AccessTools.Method` 沿继承链命中基类 → 重复 patch）；阶段记录 `docs/ai/stages/stage-5a.md`。
-- 已知：气泡压住正文词时点该词不再翻页（空白仍翻页）；中键/滚轮未覆盖。
+- 已知（5b 后已修正）：吞点击现在只覆盖气泡矩形；中键/滚轮未覆盖。
 
 
 ## 阶段 3b-4（2026-11-24 凌晨，已合并）
@@ -165,34 +172,34 @@
 3. **扩展面星标已支持**（5b）：气泡内星标可收藏/取消，立即写盘；`Sentence` 取所在行文本。
 4. **单字母词矩形略宽**：宽度用 `MeasureString(word)`（含右留白），约多 4px；点击/悬停仍准确，视觉上盒子比字形宽一点（可接受，若要求像素级可再收紧）。
 5. **世界层未接**（头顶气泡、节日/矿洞横幅）。
-6. **剩余文本面未接**：仅**世界层**（阶段 4，头顶气泡/节日横幅）；订单板、木匠、任务板/日历、发货箱结算/丢物列表、商店正文、收集包、精通菜单均已接入。
-7. **`dist/` 发布包未重建**：manifest 已改，发布前必须重新打包。
+6. **剩余文本面未接**：仅**世界层**（阶段 4，头顶气泡/节日横幅）；9 个菜单已接入；`MasteryTrackerMenu` 未实装（见 14）。
+7. **`dist/` 已重建 0.6.0**：`dist/BilingualLearning 0.6.0.zip`（与 bin 同哈希）；旧 0.5.0 包仍在 dist，上传时注意选 0.6.0。
 8. **连字符复合词不命中**（`coop-dwelling`）：既有分词限制，非 3b-1 回归；见 `docs/requirements/需求规格说明.md` §10-1。
 9. **卷轴居中标题不可查**：木匠蓝图标题（`Coop`/`Barn`）、订单板 `ChooseOne` 横幅等走 `drawStringWithScrollCenteredAt`，被 `drawBGScroll != -1` 闸门跳过；见 §10-2。
 10. **木匠菜单换蓝图无键盘/滚轮**（游戏原生限制）：目录视图下只有手柄 LT/RT（`receiveGamePadButton` IL_0010/IL_0018）或鼠标点左下角箭头（`backButton`/`forwardButton`，`receiveLeftClick` IL_00A9/IL_00FD）；`receiveKeyPress` 不含任何换蓝图键、`receiveScrollWheelAction` 为空。放置模式（`onFarm`）下全部短路。若要让键盘也可换，需 mod 侧反射 `SetNewActiveBlueprint`，未做。
 11. **同形多义词显示错误义项**：日历 `Fall` 显示「落下，爱上」而非「秋天」（`saw` 同类）。既有词典按拼写精确匹配、无 POS/语境消歧；见 `BUG_PATTERNS.md` #22、需求 §10-3。
 12. **扩展面点击吞掉已覆盖 8 个白名单菜单**（5a + 5b 收窄）：只有**气泡矩形**（含星标）吞左/右键；点词/桥接走原生（任务面板/翻页/接单/购买）。中键/滚轮、`GameMenu` 各页与世界层仍未覆盖。
 13. **白名单菜单内的 tooltip 文本会被通用 `DrawString` 捕获**（商店/木匠/任务板/任务日志同源）：正常位置一般不触发，靠近屏幕边缘 tooltip 翻转到光标处时可能误出气泡；属架构层遗留，后续统一处理（可在 `drawHoverText` 处抑制捕获）。
-14. **`MasteryTrackerMenu` 未实机测试**（3c）：代码已接入白名单，但当前存档未达精通条件；**发布前必须补测**（悬停奖励名/说明/Claim/XP、点 Claim、右键关闭）。测试步骤见 `docs/ai/stages/stage-3c.md` §5。
+14. **`MasteryTrackerMenu` 未实装**（3c）：曾接入白名单但存档条件不足、未实机，按用户要求已移除（`388c170`），不随 0.6.0 发布；代码/研究保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
 15. **未读 Junimo 文不参与查词**（3c 用户要求）：`junimoText=true` 的绘制直接跳过捕获，避免乱码/错位气泡。
 
 ## 下一步 TODO
 
 > 协作方式：2026-11-23 起建议用**开发模式**（主控 Agent + 阶段 SubAgent）推进，见 `docs/ai/DEV_MODE.md`、`docs/ai/MAIN_AGENT_PROMPT.md`、`docs/ai/SUBAGENT_PROMPTS.md`。代码阶段严格串行，只有只读研究/评审可并行。
 
-1. **【已完成】** 本轮已提交：`e818b9f`（代码）+ `b2fae14`（文档）；`git status` 干净。
-2. **发布前必做**：补测 `MasteryTrackerMenu`（需满足精通条件的存档）；补测项通过前不发布。
-3. **需求池（`docs/requirements/需求规格说明.md` §10）**：连字符复合词分词（中）、卷轴居中标题可查词（中，影响木匠标题/订单板横幅/收集包奖励名）、同形多义词义项选择（低，`Fall`/`saw`）。
-4. **阶段 4（可选）**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需要世界→屏幕坐标换算。
-5. **收尾**：性能/回归（每帧捕获量、tooltip 捕获抑制），再进发布准备。
-6. **发布前**：重建 `dist/BilingualLearning 0.5.0.zip`（或升 0.6.0，待定），补 GitHub `UpdateKeys`，Nexus 勾 `AI Assisted`。
-7. **本次会话新增（相对 0.5.0）**：3a 订单板、3b-1 木匠、3b-2 任务板/日历、3b-3 发货箱/丢物、3b-4 商店正文、5a 点击吞掉、5b 星标、3c 收集包/精通；`dist/` 仍是旧包。
-7. **本次会话新增（相对 0.5.0）**：3a 订单板、3b-1 木匠、3b-2 任务板/日历、3b-3 发货箱/丢物、3b-4 商店正文、5a 点击吞掉、5b 星标；`dist/` 仍是旧包，发布前必须重建。
+1. **用户实机确认 0.6.0**（4 条：SMAPI 版本 / 扩展面查词+星标 / 商店点击与 F9 / Off 行为）；通过后合并 `release/0.6.0` 到 master 并打 `v0.6.0` tag（可选）。
+2. **需求 §10-5（高优先级）**：取消 `Extended lookup` 开关、扩展面默认开启——移除 GMCM 选项与 `ModConfig.ExtendLookup`，`TextCapture.Enabled` 改为「白名单 + F10」，同步 README/CHANGELOG/Nexus 与阶段验收。
+3. **Mastery 补测**（需满足条件的存档）：通过后把 `MasteryTrackerMenu` 重新加入白名单（一行）并实机验收。
+4. **需求池（`docs/requirements/需求规格说明.md` §10）**：连字符复合词分词（中）、卷轴居中标题可查词（中，影响木匠标题/订单板横幅/收集包奖励名）、同形多义词义项选择（低，`Fall`/`saw`）、商店 tooltip 抢焦点（低，可接受）。
+5. **阶段 4（可选）**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需世界→屏幕坐标换算。
+6. **收尾技术债**：白名单菜单内 tooltip 文本可能被通用 `DrawString` 捕获（可在 `drawHoverText` 处抑制）；中键/滚轮未覆盖。
+7. **发布**：Nexus 上传 `dist/BilingualLearning 0.6.0.zip`（不要选 0.5.0），勾 `AI Assisted`；GitHub `UpdateKeys` 待用户给地址。
 
 ## 待确认问题
 
-1. 【待确认】本轮扩展功能是否升版本到 `0.6.0`（当前 manifest/csproj 仍 0.5.0，dist 未重建）。
+1. 【待确认】0.6.0 用户实机 4 条（见 TODO 1）。
 2. 【待确认】是否把「单字母矩形右留白」收紧到字形边缘（会略减点击容差）。
-3. 【已定】阶段 3 顺序：订单板（3a 已完成）→ 菜单长尾（3b）→ `JunimoNote`（3c）。
+3. 【已定】阶段 3 顺序：订单板（3a）→ 菜单长尾（3b）→ 收集包（3c）。
 4. 【待确认】GitHub 仓库地址（`UpdateKeys` 目前只有 `Nexus:55803`）。
 5. 【待确认】知识卡片图标是否要包进面板内（旧问题，未做）。
+6. 【已定】Mastery 未实机 → 不随 0.6.0 发布（白名单已移除）。

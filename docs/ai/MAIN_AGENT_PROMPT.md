@@ -1,6 +1,7 @@
 # 主控 Agent Prompt（可直接粘贴到新会话）
 
 > 用法：开启「开发模式」会话时，把下面代码块整段作为第一条消息（或系统提示）发给主控 Agent；把 `<当前阶段>` 换成实际阶段。
+> **本次交接专用 Prompt（含 0.6.0 待验证状态与下一任务）见 `docs/ai/NEXT_SESSION_PROMPT.md`，优先用它。**
 > 配套文件：`docs/ai/DEV_MODE.md`（管理结构）、`docs/ai/SUBAGENT_PROMPTS.md`（子 Agent 模板与报告 schema）。
 
 ```text
