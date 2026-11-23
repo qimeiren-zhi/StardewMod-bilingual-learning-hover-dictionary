@@ -384,89 +384,12 @@ public class WordOverlay
         return raw.Substring(start, end - start);
     }
 
-    private sealed class WordHit
-    {
-        public string Text = "";
-        public Rectangle Box;
-    }
-
     /// <summary>
-    /// 逐字符复刻 SpriteText.drawString（拉丁分支）：推进 = 8*zoom + offset(当前) + offset(下一个)；
-    /// 换行判定用 positionOfNextSpace。
+    /// 逐字符复刻 SpriteText.drawString（拉丁分支）的单词布局，供对话命中检测使用。
+    /// 实现已抽到 <see cref="SpriteTextWordLayout"/>，与信件等扩展文本面共用。
     /// </summary>
-    private static List<WordHit> BuildWordHits(string s, int originX, int originY, int wrapWidth)
+    private static List<SpriteWordHit> BuildWordHits(string s, int originX, int originY, int wrapWidth)
     {
-        var result = new List<WordHit>();
-        float zoom = SpriteText.FontPixelZoom;
-        float lineHeight = 18f * zoom;
-        float charHeight = 16f * zoom;
-
-        float posX = originX;
-        float posY = originY;
-        WordHit? current = null;
-
-        void EndWord()
-        {
-            if (current != null)
-            {
-                result.Add(current);
-                current = null;
-            }
-        }
-
-        for (int i = 0; i < s.Length; i++)
-        {
-            char c = s[i];
-
-            if (c == '^')
-            {
-                EndWord();
-                posY += lineHeight;
-                posX = originX;
-                continue;
-            }
-
-            // 换行判定（与 drawString 673 行一致）
-            if (SpriteText.positionOfNextSpace(s, i, (int)(posX - originX), 0) >= wrapWidth)
-            {
-                EndWord();
-                posY += lineHeight;
-                posX = originX;
-                if (c == ' ')
-                {
-                    continue; // 行首空格跳过
-                }
-            }
-
-            if (c == ' ')
-            {
-                EndWord();
-            }
-            else
-            {
-                if (current == null)
-                {
-                    current = new WordHit
-                    {
-                        Text = "",
-                        Box = new Rectangle((int)posX, (int)posY, 0, (int)charHeight)
-                    };
-                }
-                current.Text += c;
-
-                int glyphRight = (int)(posX + 8f * zoom + SpriteText.getWidthOffsetForChar(c) * zoom);
-                current.Box = new Rectangle(current.Box.X, current.Box.Y, glyphRight - current.Box.X, current.Box.Height);
-            }
-
-            // 推进（与 drawString 686-693 行一致）
-            if (i < s.Length - 1)
-            {
-                posX += 8f * zoom + SpriteText.getWidthOffsetForChar(s[i + 1]) * zoom;
-            }
-            posX += SpriteText.getWidthOffsetForChar(c) * zoom;
-        }
-
-        EndWord();
-        return result;
+        return SpriteTextWordLayout.Build(s, originX, originY, wrapWidth);
     }
 }

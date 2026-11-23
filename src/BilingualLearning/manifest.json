@@ -6,12 +6,12 @@
   "UniqueID": "MarenQi.BilingualLearning",
   "EntryDll": "BilingualLearning.dll",
   "MinimumApiVersion": "4.0.0",
-  "MinimumGameVersion": "1.6.0",
+  "MinimumGameVersion": "1.6.15",
   "Dependencies": [
     {
       "UniqueID": "spacechase0.GenericModConfigMenu",
       "IsRequired": false
     }
   ],
-  "UpdateKeys": []
+  "UpdateKeys": [ "Nexus:55803" ]
 }

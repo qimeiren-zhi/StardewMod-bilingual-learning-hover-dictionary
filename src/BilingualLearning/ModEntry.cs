@@ -18,6 +18,7 @@ public class ModEntry : Mod
     private static ModEntry? instance;
 
     private readonly WordOverlay overlay = new();
+    private ExtendedTextOverlay? extendedOverlay;
     private Vocabulary? vocabulary;
     private ModConfig config = new();
 
@@ -51,6 +52,18 @@ public class ModEntry : Mod
         this.bubbleSandy = this.LoadBubbleTexture(helper, "assets/bubble_sandy.png");
 
         this.overlay.Init(this.Monitor, this.dictionary, this.chineseFont, this.vocabulary!, nameSet, this.config, this.bubbleDefault, this.bubbleSandy);
+
+        // 阶段0/2：扩展文本面（信件 / 任务日志）悬停查词
+        this.extendedOverlay = new ExtendedTextOverlay();
+        this.extendedOverlay.Init(this.Monitor, this.dictionary, this.chineseFont, nameSet, this.config, this.bubbleDefault, this.bubbleSandy);
+
+        // 每帧绘制前清空捕获缓冲（本帧结果在下一帧用于命中）；关闭功能且未开调试时不产生捕获开销
+        helper.Events.Display.Rendering += (sender, e) =>
+        {
+            TextCapture.BeginFrame();
+            TextCapture.Enabled = this.config.ExtendLookup == "On"
+                || (this.extendedOverlay?.DebugRects ?? false);
+        };
 
         var harmony = new Harmony(this.ModManifest.UniqueID);
 
@@ -110,6 +123,43 @@ public class ModEntry : Mod
                 harmony.Patch(
                     original: method,
                     postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawStringArgs))
+                );
+            }
+        }
+
+        // 阶段0：统一文本捕获（SpriteText.drawString + 4 个 DrawString 重载）
+        var spriteTextDrawString = AccessTools.Method(typeof(SpriteText), "drawString");
+        if (spriteTextDrawString != null)
+        {
+            harmony.Patch(
+                original: spriteTextDrawString,
+                postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterSpriteTextDrawString))
+            );
+        }
+        else
+        {
+            this.Monitor.Log("未找到 SpriteText.drawString，扩展文本面将不可用", LogLevel.Warn);
+        }
+
+        var captureSignatures = new[]
+        {
+            // 4 参数 string
+            new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color) },
+            // 9 参数 string
+            new[] { typeof(SpriteFont), typeof(string), typeof(Vector2), typeof(Color), typeof(float), typeof(Vector2), typeof(float), typeof(SpriteEffects), typeof(float) },
+            // 4 参数 StringBuilder
+            new[] { typeof(SpriteFont), typeof(System.Text.StringBuilder), typeof(Vector2), typeof(Color) },
+            // 9 参数 StringBuilder（卡片未覆盖的第 4 个重载）
+            new[] { typeof(SpriteFont), typeof(System.Text.StringBuilder), typeof(Vector2), typeof(Color), typeof(float), typeof(Vector2), typeof(float), typeof(SpriteEffects), typeof(float) }
+        };
+        foreach (var signature in captureSignatures)
+        {
+            var method = AccessTools.Method(typeof(SpriteBatch), "DrawString", signature);
+            if (method != null)
+            {
+                harmony.Patch(
+                    original: method,
+                    postfix: new HarmonyMethod(typeof(ModEntry), nameof(ModEntry.AfterDrawStringCapture))
                 );
             }
         }
@@ -183,6 +233,87 @@ public class ModEntry : Mod
         }
     }
 
+    /// <summary>阶段0：记录 SpriteText 绘制（只读，不改变游戏绘制）。</summary>
+    private static void AfterSpriteTextDrawString(object[] __args)
+    {
+        if (__args.Length < 12 || !ShouldCapture())
+        {
+            return;
+        }
+        if (!(__args[1] is string text)
+            || !(__args[2] is int x)
+            || !(__args[3] is int y)
+            || !(__args[4] is int characterPosition)
+            || !(__args[5] is int width)
+            || !(__args[10] is int drawBgScroll))
+        {
+            return;
+        }
+
+        TextCapture.RegisterSpriteText(text, x, y, characterPosition, width, drawBgScroll);
+    }
+
+    /// <summary>阶段0：记录 SpriteFont 绘制（四个重载共用）。</summary>
+    private static void AfterDrawStringCapture(object[] __args)
+    {
+        if (__args.Length < 4 || !ShouldCapture())
+        {
+            return;
+        }
+        if (!(__args[0] is SpriteFont font) || !(__args[2] is Vector2 position))
+        {
+            return;
+        }
+
+        string? text = __args[1] as string;
+        if (text == null && __args[1] is System.Text.StringBuilder sb)
+        {
+            text = sb.ToString();
+        }
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        Vector2 origin = Vector2.Zero;
+        float rotation = 0f;
+        float scale = 1f;
+        if (__args.Length >= 9)
+        {
+            if (__args[4] is float r)
+            {
+                rotation = r;
+            }
+            if (__args[5] is Vector2 o)
+            {
+                origin = o;
+            }
+            if (__args[6] is float s)
+            {
+                scale = s;
+            }
+        }
+
+        TextCapture.RegisterSpriteFont(text, font, position, origin, rotation, scale);
+    }
+
+    private static bool ShouldCapture()
+    {
+        // 卡片重放 tooltip 期间由 TooltipTextCapture 负责，避免双重记录
+        if (TooltipTextCapture.Capturing || Game1.activeClickableMenu is KnowledgeCardMenu)
+        {
+            return false;
+        }
+
+        // 只覆盖白名单菜单（阶段0/2：信件、任务日志），其它菜单不产生捕获开销
+        if (!ExtendedTextOverlay.IsAllowedMenu(Game1.activeClickableMenu))
+        {
+            return false;
+        }
+
+        return LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.en;
+    }
+
     private static void AfterDrawHoverText(object[] __args)
     {
         if (__args.Length > 9)
@@ -214,6 +345,7 @@ public class ModEntry : Mod
         api.RegisterSimpleOption(manifest, "Export key", "Export the vocabulary", () => this.config.ExportKey, value => this.config.ExportKey = value);
         api.RegisterChoiceOption(manifest, "Export location", "Where to save exported files", () => this.config.ExportLocation, value => this.config.ExportLocation = value, new[] { "Documents", "Desktop", "Downloads", "Mod folder" });
         api.RegisterChoiceOption(manifest, "Bubble style", "Bubble background and text color style", () => this.config.BubbleStyle, value => this.config.BubbleStyle = value, new[] { "Default", "Sandy's Notes" });
+        api.RegisterChoiceOption(manifest, "Extended lookup", "Look up words in letters and the quest log (experimental)", () => this.config.ExtendLookup, value => this.config.ExtendLookup = value, new[] { "Off", "On" });
     }
 
     private HashSet<string> LoadNpcNames(IModHelper helper)
@@ -252,6 +384,15 @@ public class ModEntry : Mod
             else
             {
                 this.Monitor.Log("生词本为空，无需导出", LogLevel.Info);
+            }
+        }
+        else if (e.Button == this.config.DebugTextRectsKey && this.extendedOverlay != null)
+        {
+            this.extendedOverlay.DebugRects = !this.extendedOverlay.DebugRects;
+            this.Monitor.Log($"文本矩形调试：{(this.extendedOverlay.DebugRects ? "开启" : "关闭")}（上帧捕获 {TextCapture.LastCount} 行）", LogLevel.Info);
+            if (this.extendedOverlay.DebugRects)
+            {
+                this.extendedOverlay.DumpDiagnostics();
             }
         }
         else if (e.Button == this.config.LookupKey)
@@ -296,6 +437,16 @@ public class ModEntry : Mod
 
             // 气泡画完后重绘菜单光标，确保光标浮在气泡之上
             box.drawMouse(e.SpriteBatch);
+        }
+
+        // 阶段0/2：扩展文本面（信件 / 任务日志）查词
+        if (this.extendedOverlay != null)
+        {
+            this.extendedOverlay.UpdateAndDraw(e.SpriteBatch);
+            if (this.extendedOverlay.HasBubble)
+            {
+                this.extendedOverlay.DrawCursor(e.SpriteBatch);
+            }
         }
     }
 }

@@ -30,13 +30,14 @@ public static class BubbleRenderer
     private const int Gap = 10;
 
     /// <summary>计算气泡布局（不绘制）。</summary>
-    public static BubbleLayout ComputeLayout(Rectangle wordBox, string translation, ChineseFont? chineseFont)
+    public static BubbleLayout ComputeLayout(Rectangle wordBox, string translation, ChineseFont? chineseFont, bool showStar = true)
     {
         Vector2 transSize = chineseFont != null
             ? chineseFont.Measure(translation)
             : Game1.smallFont.MeasureString(translation);
 
-        int width = (int)transSize.X + Gap + StarSize + Padding * 2;
+        int starBlock = showStar ? Gap + StarSize : 0;
+        int width = (int)transSize.X + starBlock + Padding * 2;
         int height = (int)Math.Max(transSize.Y, StarSize) + Padding * 2;
 
         int x = wordBox.X;
@@ -52,7 +53,7 @@ public static class BubbleRenderer
 
         var bubbleBox = new Rectangle(x, y, width, height);
         var starBox = new Rectangle(x + Padding, y + (height - StarSize) / 2, StarSize, StarSize);
-        var transPos = new Vector2(x + Padding + StarSize + Gap, y + (height - transSize.Y) / 2);
+        var transPos = new Vector2(x + Padding + (showStar ? StarSize + Gap : 0), y + (height - transSize.Y) / 2);
         return new BubbleLayout(bubbleBox, starBox, transPos);
     }
 
@@ -65,7 +66,8 @@ public static class BubbleRenderer
         ModConfig config,
         ChineseFont? chineseFont,
         Texture2D? bubbleDefault,
-        Texture2D? bubbleSandy)
+        Texture2D? bubbleSandy,
+        bool showStar = true)
     {
         // 背景（按风格）
         bool sandy = config.BubbleStyle == "Sandy's Notes";
@@ -76,9 +78,13 @@ public static class BubbleRenderer
         float bgScale = customBg ? 1f : 2f;
         IClickableMenu.drawTextureBox(b, bgTex, bgSrc, layout.BubbleBox.X, layout.BubbleBox.Y, layout.BubbleBox.Width, layout.BubbleBox.Height, Color.White, bgScale, drawShadow: false, draw_layer: 0.95f);
 
-        // 星标
-        Color starColor = starred ? Color.White : new Color(90, 90, 90) * 0.6f;
-        b.Draw(Game1.mouseCursors, layout.StarBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.96f);
+        // 星标（阶段0 的扩展文本面不绘制星标：只读悬停，不支持收藏）
+        if (showStar)
+        {
+            Color starColor = starred ? Color.White : new Color(90, 90, 90) * 0.6f;
+            b.Draw(Game1.mouseCursors, layout.StarBox, IridiumStarSource, starColor, 0f, Vector2.Zero, SpriteEffects.None, 0.96f);
+        }
+
 
         // 文字
         Color transColor = customBg ? new Color(86, 22, 12) : new Color(240, 240, 240);
