@@ -96,16 +96,39 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE
+STAGE: 5a   BRANCH: stage/5a-click-swallow   COMMITS: 1（本次提交；报告随代码提交，哈希见提交记录）
+SUMMARY: 把 3b-4 的 ShopMenu 专用「气泡区域吞点击」泛化为遍历 `ExtendedTextOverlay.SupportedMenus` 的统一 prefix，共 patch 12 个自身 override（左键 8 个 + 右键 4 个），未命中气泡时一律放行。`AllowedMenus` 内容与顺序未变，仅新增只读视图 `SupportedMenus`；`ExtendLookup=Off` 时无气泡建立，prefix 恒放行。构建 0 error（未部署，待主控带部署重建后实机验收）。
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — 新增 `internal static IReadOnlyList<Type> SupportedMenus => AllowedMenus;`（白名单内容/顺序不变）
+- src/BilingualLearning/ModEntry.cs — 删除 ShopMenu 专用注册块，改为遍历 8 类型 × 左/右键注册；只 patch `method.DeclaringType == type` 的自身 override；`BeforeShopClick` 更名 `BeforeExtendedMenuClick`（实现不变）
+- docs/ai/stages/stage-5a.md — 本报告（§2）
 VERIFY:
-DECISIONS:
-PITFALLS:
+- build: 0 error（`-p:EnableModDeploy=false`；仅既有 CS9057 警告；**未部署**）
+- checks:
+  - `git diff --stat master...stage/5a-click-swallow` ⊆ IN_SCOPE（源码 2 文件 + stage-5a.md；无 manifest/csproj/版本号/dist/bin/obj/references）
+  - Mono.Cecil 复核 Stardew Valley 1.6.15：8 个类型均有 `receiveLeftClick(int,int,bool)` 自身 override；`receiveRightClick(int,int,bool)` 自身 override 仅 LetterViewerMenu / SpecialOrdersBoard / Billboard / ShopMenu 4 个 → 实际注册 12 个 patch，无重复、无基类 patch
+  - 跳过右键（未声明 override，继承基类空实现）：QuestLog、CarpenterMenu、ShippingMenu、ItemListMenu
+  - 左键同名方法找不到或声明类型非自身时 Warn 并跳过；右键缺失/继承时仅 Debug（预期行为，不刷日志）
+  - `ExtendLookup=Off`：`UpdateAndDraw` 走 `Clear()` → `HasBubble=false` → `IsPointerOnBubble` 返回 false → prefix 返回 true，零行为变化
+  - 白名单 8 类型不变：LetterViewerMenu / QuestLog / SpecialOrdersBoard / CarpenterMenu / Billboard / ShippingMenu / ItemListMenu / ShopMenu
+- user_tests:
+  1. 信件（多页）悬停词出气泡 → 左键点气泡：不翻页/不关信；右键点气泡：同样不翻页/不关信；点气泡外空白：翻页/关信正常（含气泡上下翻转两种位置）。
+  2. 任务日志：悬停任务描述词出气泡 → 左键点气泡：不选中/不取消任务；点任务行（气泡外）行为正常。
+  3. 小镇任务板 + 特殊订单板：悬停描述出气泡 → 左键点气泡：不接任务；右键点气泡：不关闭菜单；气泡外右键仍按原生关闭。
+  4. 木匠菜单：悬停描述 → 点气泡：不切换蓝图、不触发底部按钮；发货箱结算页（或 debug 触发）气泡上点 OK 不生效。
+  5. 商店沿用 3b-4 行为（左/右键气泡内不购买）；GMCM 关闭 Extended lookup 后上述 8 类菜单点击全部原生。
+DECISIONS: none（沿用 DECISIONS #18「白名单 + 只读气泡」与 #19 商店 tooltip 不接管）
+PITFALLS: 新坑（已写在 Packet EVIDENCE，本阶段未改 BUG_PATTERNS 以守住 IN_SCOPE）：泛化 patch 时 `AccessTools.Method(type, ...)` 会沿继承链返回基类方法；若直接 patch，`IClickableMenu.receiveLeftClick/RightClick` 会被每个类型重复 patch、prefix 执行多次。修法：先取方法，再判 `method.DeclaringType == type`，只 patch 自身 override；右键无 override 的类型跳过（基类方法为空，无功能影响）。关键词：`AccessTools.Method` `DeclaringType` `getMethod` `继承` `重复 patch` `receiveRightClick`。
 RISKS:
-DOCS:
-NEXT_READY:
+- 已知风险（Packet 已列）：信件气泡可见时点击正文**词**不再翻页（词矩形属于吞掉区域）；空白处仍翻页。属预期，验收时按此判断。
+- prefix 只看上一帧建立的 `HasBubble`；若点击前一刻因移出词/翻页清空气泡，该次点击会落回原生路径（正常语义，极端时序可能漏吞一次）。
+- `IsPointerOnBubble` 不校验当前菜单类型，但 `HasBubble` 仅由白名单菜单的绘制帧建立，切换菜单时 `UpdateAndDraw` 会 `Clear`；理论上存在「换菜单后尚未重绘的一帧」窗口，未实机复现。
+- 右键吞掉对 LetterViewerMenu 会同时阻断其「右键转调左键」的翻页/关信路径（仅在气泡上）；气泡外不受影响。
+- 本次构建未部署；实机测试前需主控执行带部署构建（游戏当前未运行，已确认）。
+- 未覆盖：中键/滚轮；非白名单菜单（GameMenu 各页、世界层）的同类穿透仍按 DECISIONS #18 留待后续。
+DOCS: docs/ai/stages/stage-5a.md §2；未新增 DECISIONS / BUG_PATTERNS 条目（IN_SCOPE 仅三项文件，坑已记录于本报告 PITFALLS）
+NEXT_READY: yes — 待只读评审 + 用户 5 条实机验收；主控验收前需带部署重建 DLL。
 ```
 
 ## 3. 评审结论（评审 Agent 填写）

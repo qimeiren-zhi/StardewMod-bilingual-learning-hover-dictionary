@@ -29,6 +29,9 @@ public class ExtendedTextOverlay
         typeof(ShopMenu)
     };
 
+    /// <summary>白名单的只读视图，供 ModEntry 注册点击吞掉补丁（阶段 5a）。</summary>
+    internal static IReadOnlyList<Type> SupportedMenus => AllowedMenus;
+
     private IMonitor monitor = null!;
     private DictionaryData? dictionary;
     private ChineseFont? chineseFont;
