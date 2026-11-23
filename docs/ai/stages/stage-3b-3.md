@@ -8,9 +8,9 @@
 |---|---|
 | 阶段 ID | `3b-3` |
 | 分支 | `stage/3b-3-shipping-itemlist` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-24 / — |
-| 执行 Agent | `<待派发>` |
+| 状态 | `BUILT`（待评审 → 待用户实机） |
+| 开始 / 结束 | 2026-11-24 / 2026-11-24 |
+| 执行 Agent | `exec-3b3` |
 | 评审 Agent | `<待派发>` |
 
 ## 1. Packet（主控填写）
@@ -83,16 +83,34 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 ## 2. 执行报告（执行 Agent 填写，schema 见 §6）
 
 ```text
-STATUS:
-STAGE:
-SUMMARY:
+STATUS: DONE
+STAGE: 3b-3
+SUMMARY: 在 `ExtendedTextOverlay.AllowedMenus` 追加 `typeof(ShippingMenu)` 与 `typeof(ItemListMenu)`（并同步类注释补「3b-3」），复用既有 SpriteText 捕获/裁剪/命中管线，无新增 hook。构建 0 error（本次 `-p:EnableModDeploy=false`，**未部署**；构建时游戏未运行，主控需做一次带部署构建再实机）。闸门/布局/TextCapture/ModEntry 零改动，ExtendLookup=Off 行为不变。
 FILES:
+- src/BilingualLearning/ExtendedTextOverlay.cs — 白名单新增 2 个类型 + 类注释补阶段名（净 +4/-2 行）
+- docs/ai/stages/stage-3b-3.md — 本执行报告 + §0 元信息（状态 BUILT / Agent）
 VERIFY:
-DECISIONS:
-PITFALLS:
+- build: 0 error（1 warning CS9057 已知无害），命令 `dotnet build src/BilingualLearning/BilingualLearning.csproj -c Debug -p:EnableModDeploy=false`
+- checks:
+  - `git diff --stat` → 仅 `src/BilingualLearning/ExtendedTextOverlay.cs`（+4/-2）；无 bin/obj/dist/manifest/版本号
+  - 白名单旧 5 类保留（LetterViewerMenu / QuestLog / SpecialOrdersBoard / CarpenterMenu / Billboard），新增 ShippingMenu / ItemListMenu
+  - diff 仅注释 + AllowedMenus；`IsAllowedMenu`/`ShouldCapture`/`RebuildWordRects`/`BuildSpriteFontHits`/`TextCapture`/`ModEntry` 均未出现在 diff → Off 零行为变化
+  - `Get-Process "Stardew Valley"` → 未运行；虽可部署但按 Packet 只编译不部署
+- user_tests（5 条，需用户游戏内确认）:
+  1. 发货箱放几样东西 → 睡觉进入日终结算页 → 悬停物品名 / 分类名（Farming、Foraging 等）/ 总金额文本 → 出词性+中文气泡；移入气泡不消失
+  2. 结算页切换分类/翻页（左右页签）→ 旧气泡不残留，新页文本仍可查
+  3. 点底部 OK 关闭结算 → 正常进入次日，无异常、无残留气泡
+  4. SMAPI 控制台 `debug eventScript Farm "none/-100 -100/farmer 5 5 2/showItemsLost/end"` → 丢物列表出现 → 悬停标题/物品名/总价值出气泡（若 `debug` 命令不存在则跳过并告知）
+  5. 关闭 Extended lookup → 两菜单均不出气泡；对话/F1 卡片/信件/任务日志/订单板/木匠/任务板/日历与此前一致
+DECISIONS: none（沿用决策 18「白名单 + 只读气泡」，无新长期决策）
+PITFALLS: none（与 3a/3b-1/3b-2 同构；未见新可复现坑）
 RISKS:
-DOCS:
-NEXT_READY:
+- ShippingMenu 为满屏矩形（ctor 用 viewport 宽高），crop 按全屏 → 命中不被裁剪到可见绘制框；由于该菜单正文都在框内、无滚动，预期无影响，但若屏幕上有框外文字面（HUD）被捕获，可能多出不可见命中（只读气泡、低风险）
+- ItemListMenu 仅能由事件命令 `showItemsLost` 打开，属低频场景；测试需用 debug eventScript
+- 两个菜单都按 `currentTab` 翻页、无滚动；翻页后残留依赖既有「每帧校验原词」通用机制，未在本阶段实机验证
+- 未部署：本轮仅编译（Packet 要求），实机验收前需带部署构建
+DOCS: docs/ai/stages/stage-3b-3.md §2（DECISIONS/BUG_PATTERNS 无追加）
+NEXT_READY: yes — 待评审 PASS + 用户实机 5 条后合并；随后 3b-4 ShopMenu（tooltip 路径，风险最高）
 ```
 
 ## 3. 评审结论（评审 Agent 填写）
