@@ -230,8 +230,8 @@ public class WordOverlay
         return false;
     }
 
-    /// <summary>清理游戏对话标记（^ 换行、^^ 分页）。</summary>
-    private static string CleanSentence(string s)
+    /// <summary>清理游戏对话标记（^ 换行、^^ 分页）。扩展文本面复用同一清理规则。</summary>
+    internal static string CleanSentence(string s)
     {
         return s.Replace("^^", " ").Replace("^", " ").Trim();
     }
