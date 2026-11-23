@@ -9,10 +9,10 @@
 |---|---|
 | 阶段 ID | `5a` |
 | 分支 | `stage/5a-click-swallow` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-24 / — |
-| 执行 Agent | `<待派发>` |
-| 评审 Agent | `<待派发>` |
+| 状态 | `MERGED` |
+| 开始 / 结束 | 2026-11-24 / 2026-11-24 |
+| 执行 Agent | `exec-5a` |
+| 评审 Agent | `review-5a` |
 
 ## 1. Packet（主控填写）
 
@@ -143,11 +143,11 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/5a-click-swallow` = `ModEntry.cs`（+54/−17）+ `ExtendedTextOverlay.cs`（+5）+ 阶段文档；无版本号/dist/bin/obj/references。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，DLL 与 bin 一致。
+- 用户实机：**通过**（信件/任务日志/任务板/订单板/木匠/发货箱/商店的气泡内左右键均被吞，气泡外与 Off 全部原生）。
+- 合并提交：`63003be`（--no-ff，父 `67219d5`）。
+- 后续动作：阶段 5b（星标收藏）——在 5a 的吞点击通道里先 toggle 星标；随后阶段 4 世界层。
 
 ## 5. 经验沉淀（可选）
 
