@@ -1,6 +1,6 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-24（凌晨）。基线：`master` @ `63003be`（3a、3b-1~3b-4、5a 全部合并），版本 `0.5.0`。
+> 更新时间：2026-11-24（凌晨）。基线：`master` @ `d501217`（3a、3b-1~3b-4、5a、5b 全部合并），版本 `0.5.0`。
 > `dist/` 未重建；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
 > 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`；协作模式见 `docs/ai/DEV_MODE.md`。
@@ -13,7 +13,15 @@
   - 阶段 1：**信件 / 秘密纸条 / 日志残页**悬停查词；
   - 阶段 2：**任务日志（QuestLog）**悬停查词 + 滚动/翻页不残留 + 命中裁剪；
   - 对齐问题全部修复（见「本轮修复」），用户确认「结果完美」。
-- 目标状态：**3b 菜单长尾全部完成**；**阶段 5 已开刀（5a 点击吞掉完成）**。下一步：5b 星标收藏 → 3c `JunimoNote` → 4 世界层。
+- 目标状态：**3b 菜单长尾 + 阶段 5（5a 点击吞掉 / 5b 星标）全部完成**。下一步可选：3c `JunimoNote`、阶段 4 世界层、或发布准备（版本号 + `dist` 重建）。
+
+## 阶段 5b（2026-11-24 凌晨，已合并）
+
+- 范围：扩展面气泡显示星标（`showStar:true`），左键点星 toggle `Vocabulary`（立即写盘）；左键 prefix 先 `TryToggleStar` 再吞，右键只吞不 toggle；复用对话路径的 `Vocabulary`/`BubbleRenderer`（DECISIONS #20）。
+- 修复轮：点击吞掉区域从「气泡∪词∪桥接」**收窄为仅气泡矩形**——点词/桥接走原生（进任务面板/翻页/接单/购买），点气泡空白仍被吞（`BUG_PATTERNS` #26）。
+- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5b.md`）；用户**通过**；合并 `d501217`。
+- 阶段记录：`docs/ai/stages/stage-5b.md`。
+
 
 ## 阶段 5a（2026-11-24 凌晨，已合并）
 
@@ -146,7 +154,7 @@
 
 1. **滚动中的任务列表未实测**：测试存档任务太少；代码已裁剪到菜单区域并每帧校验原词，滚动后不应残留，待有长列表时验证。
 2. **无翻页长信可测**：翻页残留用「每帧校验原词」通用修复，逻辑上覆盖，未实机遇到。
-3. **扩展面暂不支持星标**（5a 已完成点击吞掉，5b 做星标）。
+3. **扩展面星标已支持**（5b）：气泡内星标可收藏/取消，立即写盘；`Sentence` 取所在行文本。
 4. **单字母词矩形略宽**：宽度用 `MeasureString(word)`（含右留白），约多 4px；点击/悬停仍准确，视觉上盒子比字形宽一点（可接受，若要求像素级可再收紧）。
 5. **世界层未接**（头顶气泡、节日/矿洞横幅）。
 6. **剩余文本面未接**：`JunimoNote` / 精通追踪（3c）、世界层（阶段 4）；订单板、木匠、任务板/日历、发货箱结算/丢物列表、商店正文均已接入（3b 收官）。
@@ -155,7 +163,7 @@
 9. **卷轴居中标题不可查**：木匠蓝图标题（`Coop`/`Barn`）、订单板 `ChooseOne` 横幅等走 `drawStringWithScrollCenteredAt`，被 `drawBGScroll != -1` 闸门跳过；见 §10-2。
 10. **木匠菜单换蓝图无键盘/滚轮**（游戏原生限制）：目录视图下只有手柄 LT/RT（`receiveGamePadButton` IL_0010/IL_0018）或鼠标点左下角箭头（`backButton`/`forwardButton`，`receiveLeftClick` IL_00A9/IL_00FD）；`receiveKeyPress` 不含任何换蓝图键、`receiveScrollWheelAction` 为空。放置模式（`onFarm`）下全部短路。若要让键盘也可换，需 mod 侧反射 `SetNewActiveBlueprint`，未做。
 11. **同形多义词显示错误义项**：日历 `Fall` 显示「落下，爱上」而非「秋天」（`saw` 同类）。既有词典按拼写精确匹配、无 POS/语境消歧；见 `BUG_PATTERNS.md` #22、需求 §10-3。
-12. **扩展面点击吞掉已覆盖 8 个白名单菜单**（5a）：气泡区域内的左/右键被吞；中键/滚轮、`GameMenu` 各页与世界层仍未覆盖；气泡压住正文词时点该词不再翻页（空白仍翻页）。
+12. **扩展面点击吞掉已覆盖 8 个白名单菜单**（5a + 5b 收窄）：只有**气泡矩形**（含星标）吞左/右键；点词/桥接走原生（任务面板/翻页/接单/购买）。中键/滚轮、`GameMenu` 各页与世界层仍未覆盖。
 13. **白名单菜单内的 tooltip 文本会被通用 `DrawString` 捕获**（商店/木匠/任务板/任务日志同源）：正常位置一般不触发，靠近屏幕边缘 tooltip 翻转到光标处时可能误出气泡；属架构层遗留，后续统一处理（可在 `drawHoverText` 处抑制捕获）。
 
 ## 下一步 TODO
@@ -163,11 +171,12 @@
 > 协作方式：2026-11-23 起建议用**开发模式**（主控 Agent + 阶段 SubAgent）推进，见 `docs/ai/DEV_MODE.md`、`docs/ai/MAIN_AGENT_PROMPT.md`、`docs/ai/SUBAGENT_PROMPTS.md`。代码阶段严格串行，只有只读研究/评审可并行。
 
 1. **【已完成】** 本轮已提交：`e818b9f`（代码）+ `b2fae14`（文档）；`git status` 干净。
-2. **阶段 5b**：扩展面星标收藏——在 5a 的吞点击 prefix 里先 toggle 星标（`BubbleLayout.StarBox` 已具备，`BubbleRenderer.Draw(showStar:true)`），`ExtendedTextOverlay` 需接 `Vocabulary`；随后 3c `JunimoNote`、阶段 4 世界层。
+2. **阶段 3c**：`JunimoNote`（收集包）与精通追踪——混合 SpriteText + `DrawString`，先只读核实捕获/裁剪是否够用；随后阶段 4 世界层。
 3. **需求池（`docs/requirements/需求规格说明.md` §10）**：连字符复合词分词（中）、卷轴居中标题可查词（中，影响木匠标题/订单板横幅）、同形多义词义项选择（低，`Fall`/`saw`）。
 4. **阶段 4**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需要世界→屏幕坐标换算。
-5. **收尾**：5b 之后做性能/回归（每帧捕获量、tooltip 捕获抑制），再进发布准备。
+5. **收尾**：性能/回归（每帧捕获量、tooltip 捕获抑制），再进发布准备。
 6. **发布前**：重建 `dist/BilingualLearning 0.5.0.zip`（或升 0.6.0，待定），补 GitHub `UpdateKeys`，Nexus 勾 `AI Assisted`。
+7. **本次会话新增（相对 0.5.0）**：3a 订单板、3b-1 木匠、3b-2 任务板/日历、3b-3 发货箱/丢物、3b-4 商店正文、5a 点击吞掉、5b 星标；`dist/` 仍是旧包，发布前必须重建。
 
 ## 待确认问题
 

@@ -9,9 +9,10 @@
 |---|---|
 | 阶段 ID | `5b` |
 | 分支 | `stage/5b-star` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-24 / — |
-| 执行 Agent | `<待派发>` |
+| 状态 | `MERGED` |
+| 开始 / 结束 | 2026-11-24 / 2026-11-24 |
+| 执行 Agent | `exec-5b` |
+| 评审 Agent | `review-5b` |
 | 评审 Agent | `<待派发>` |
 
 ## 1. Packet（主控填写）
@@ -134,11 +135,11 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/5b-star` = 4 源码（`ExtendedTextOverlay` +94/−、`ModEntry` +33、`SpriteTextWordLayout` +4、`WordOverlay` 可见性 +2/−2）+ 2 文档（DECISIONS #20、stage）；无版本号/dist/bin/obj/references，未改 `BubbleRenderer`。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，DLL 与 bin 一致。
+- 用户实机：**通过**（星标显示/点亮/取消/重开保留/F9 导出正常；点击吞掉区域收窄后，点词/桥接走原生、点气泡仍被吞）。
+- 合并提交：`d501217`（--no-ff，父 `766a542` 后的修复提交 `ebb0214`）。
+- 后续动作：**阶段 5 完成**（5a 点击吞掉 + 5b 星标）。下一步：3c `JunimoNote`、阶段 4 世界层，或发布准备（版本号 + `dist`）。
 
 ## 5. 经验沉淀（可选）
 
