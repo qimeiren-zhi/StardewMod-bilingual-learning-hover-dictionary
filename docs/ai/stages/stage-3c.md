@@ -8,10 +8,10 @@
 |---|---|
 | 阶段 ID | `3c` |
 | 分支 | `stage/3c-junimo-mastery` |
-| 状态 | `QUEUED` |
-| 开始 / 结束 | 2026-11-24 / — |
-| 执行 Agent | `<待派发>` |
-| 评审 Agent | `<待派发>` |
+| 状态 | `MERGED`（Mastery 待实机） |
+| 开始 / 结束 | 2026-11-24 / 2026-11-24 |
+| 执行 Agent | `exec-3c` |
+| 评审 Agent | `review-3c` |
 
 ## 1. Packet（主控填写）
 
@@ -118,11 +118,12 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/3c-junimo-mastery` = `ExtendedTextOverlay.cs`（+4/−2）+ `ModEntry.cs`（+6）+ 阶段文档；无版本号/dist/bin/obj/references。
+- 构建：`-p:EnableModDeploy=false` 与带部署构建均 0 error（部署时游戏运行被锁，关闭后已重部署，DLL 与 bin 一致）。
+- 用户实机：**JunimoNote 通过**（可读英文后区域名/包名/正文正常；点词走原生、星标正常）。**MasteryTrackerMenu 未实机**（存档未达条件）——代码已接入，标记「发布前必补测」。
+- 修复轮：用户要求「未读 Junimo 文不出气泡」→ `AfterSpriteTextDrawString` 对 `junimoText=true` 直接跳过捕获（`7582b3d`）。
+- 合并提交：`fbf1108`（--no-ff，父 `7582b3d`）。
+- 后续动作：**阶段 3 全部完成**。发布前补测 Mastery；之后阶段 4 世界层 / 发布准备。
 
 ## 5. 经验沉淀（可选）
 
