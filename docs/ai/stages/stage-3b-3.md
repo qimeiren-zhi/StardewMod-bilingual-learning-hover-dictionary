@@ -8,10 +8,10 @@
 |---|---|
 | 阶段 ID | `3b-3` |
 | 分支 | `stage/3b-3-shipping-itemlist` |
-| 状态 | `BUILT`（待评审 → 待用户实机） |
+| 状态 | `MERGED` |
 | 开始 / 结束 | 2026-11-24 / 2026-11-24 |
 | 执行 Agent | `exec-3b3` |
-| 评审 Agent | `<待派发>` |
+| 评审 Agent | `review-3b3` |
 
 ## 1. Packet（主控填写）
 
@@ -124,11 +124,12 @@ EVIDENCE:
 
 ## 4. 验收结论（主控填写）
 
-- 越界检查：`<git diff --stat 结果摘要>`
-- 构建：`<0 error>`
-- 用户实机：`<通过 / 打回原因>`
-- 合并提交：`<merge commit hash>`
-- 后续动作：`<下一阶段 / 修复项>`
+- 越界检查：`git diff --stat master...stage/3b-3-shipping-itemlist` = 源码 1 文件（+4/−2）+ 阶段报告 1 文件；无 bin/obj/dist、无 manifest/csproj/版本号。
+- 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，`bin\Debug` 与 `Mods\BilingualLearning` DLL SHA256 一致。
+- 用户实机：**全部通过**（结算页物品名/分类名/金额可查、翻页不残留、OK 正常、丢物列表可查、Off 无行为）。
+- 测试备注：`debug eventScript Farm "none/-100 -100/farmer 5 5 2/showItemsLost/end"` 只回「Sent debug command to the game, but there was no output.」，未直接弹出菜单；用户改用**人工触发事件**验证丢物列表成功。后续如需自动化复测，优先用真实死亡事件（`debug ebi PlayerKilled`，会扣钱/掉物，需测试存档）。
+- 合并提交：`c5901a8`（--no-ff，父 `a652b30`）。
+- 后续动作：阶段 3b-4 `ShopMenu`（tooltip 路径，唯一需要动 tooltip/背包交互的一刀）；随后 3c `JunimoNote`。
 
 ## 5. 经验沉淀（可选）
 

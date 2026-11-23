@@ -1,6 +1,6 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-24（凌晨）。基线：`master` @ `d6b5ac5`（阶段 3a/3b-1/3b-2 合并），版本 `0.5.0`。
+> 更新时间：2026-11-24（凌晨）。基线：`master` @ `c5901a8`（阶段 3a/3b-1/3b-2/3b-3 合并），版本 `0.5.0`。
 > `dist/` 未重建；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
 > 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`；协作模式见 `docs/ai/DEV_MODE.md`。
@@ -13,14 +13,14 @@
   - 阶段 1：**信件 / 秘密纸条 / 日志残页**悬停查词；
   - 阶段 2：**任务日志（QuestLog）**悬停查词 + 滚动/翻页不残留 + 命中裁剪；
   - 对齐问题全部修复（见「本轮修复」），用户确认「结果完美」。
-- 目标状态：阶段 3a（特殊订单板）、3b-1（木匠）、3b-2（任务板/日历）已完成并合并；下一步是阶段 3b-3（`ShippingMenu` + `ItemListMenu`），随后 3b-4（`ShopMenu`）。
+- 目标状态：阶段 3a、3b-1、3b-2、3b-3 已完成并合并；下一步是阶段 3b-4（`ShopMenu`，唯一需要动 tooltip/背包交互的一刀），随后 3c（`JunimoNote`）。
 
-## 阶段 3b-1（2026-11-23 深夜，已合并）
+## 阶段 3b-3（2026-11-24 凌晨，已合并）
 
-- 范围：`CarpenterMenu` 加入 `ExtendedTextOverlay.AllowedMenus`（一行）；蓝图描述（dialogueFont、`parseText` 多行）、建造费、配料名/数量复用现有 SpriteFont 管线，**无新增 hook**。
-- 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-1.md`）；用户实机通过。
-- 合并：`5987765`；阶段记录 `docs/ai/stages/stage-3b-1.md`。
-- 用户反馈（已转需求，见 `docs/requirements/需求规格说明.md` §10）：① 连字符复合词（`coop-dwelling`）不命中，属既有分词限制；② 蓝图建筑标题（`Coop`/`Barn`）需可查词，走 scroll 居中文本，需专门布局；③ 悬停描述时切换蓝图：**只有手柄 LT/RT**（`receiveGamePadButton` IL_0010/IL_0018），键盘/滚轮无效，鼠标需点左下角箭头（`backButton`/`forwardButton`）；放置模式 `onFarm` 下全部短路。
+- 范围：`ShippingMenu`（发货箱日终结算）与 `ItemListMenu`（丢物列表）加入 `AllowedMenus`（两行）；正文全为像素字体 `SpriteText.drawString`，复用现有布局/裁剪/命中，**无新增 hook**。
+- 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-3.md`）；用户**全部通过**。
+- 合并：`c5901a8`；阶段记录 `docs/ai/stages/stage-3b-3.md`。
+- 测试备注：`debug eventScript .../showItemsLost/end` 只回「no output」、未直接弹菜单；用户改用人工触发事件验证成功。后续复测优先 `debug ebi PlayerKilled`（扣钱掉物，需测试存档）。
 
 
 ## 阶段 3b-2（2026-11-24 凌晨，已合并）
@@ -29,6 +29,14 @@
 - 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-2.md`）；用户实机通过（公告板描述可查、长描述遮挡可接受、日历季节名可查、Off 无行为）。
 - 合并：`d6b5ac5`；阶段记录 `docs/ai/stages/stage-3b-2.md`。
 - 用户反馈（与本次无关、已记录）：日历悬停 `Fall` 显示「落下，爱上」而非「秋天」→ 同形多义词义项问题，见 `BUG_PATTERNS.md` #22 与需求 §10-3。
+
+## 阶段 3b-1（2026-11-23 深夜，已合并）
+
+- 范围：`CarpenterMenu` 加入 `ExtendedTextOverlay.AllowedMenus`（一行）；蓝图描述（dialogueFont、`parseText` 多行）、建造费、配料名/数量复用现有 SpriteFont 管线，**无新增 hook**。
+- 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-1.md`）；用户实机通过。
+- 合并：`5987765`；阶段记录 `docs/ai/stages/stage-3b-1.md`。
+- 用户反馈（已转需求，见 `docs/requirements/需求规格说明.md` §10）：① 连字符复合词（`coop-dwelling`）不命中，属既有分词限制；② 蓝图建筑标题（`Coop`/`Barn`）需可查词，走 scroll 居中文本，需专门布局；③ 悬停描述时切换蓝图：**只有手柄 LT/RT**（`receiveGamePadButton` IL_0010/IL_0018），键盘/滚轮无效，鼠标需点左下角箭头（`backButton`/`forwardButton`）；放置模式 `onFarm` 下全部短路。
+
 
 ## 本轮成果（相对 `b53598d`）
 
@@ -125,7 +133,7 @@
 3. **扩展面不支持星标/点击**（阶段 5）。
 4. **单字母词矩形略宽**：宽度用 `MeasureString(word)`（含右留白），约多 4px；点击/悬停仍准确，视觉上盒子比字形宽一点（可接受，若要求像素级可再收紧）。
 5. **世界层未接**（头顶气泡、节日/矿洞横幅）。
-6. **剩余文本面未接**：`ShippingMenu`/`ItemListMenu`（3b-3）、`ShopMenu`（3b-4，tooltip 路径）、`JunimoNote`（3c）；订单板（3a）、木匠（3b-1）、任务板/日历（3b-2）已接入。
+6. **剩余文本面未接**：`ShopMenu`（3b-4，tooltip 路径）、`JunimoNote`（3c）、世界层（阶段 4）；订单板（3a）、木匠（3b-1）、任务板/日历（3b-2）、发货箱结算/丢物列表（3b-3）已接入。
 7. **`dist/` 发布包未重建**：manifest 已改，发布前必须重新打包。
 8. **连字符复合词不命中**（`coop-dwelling`）：既有分词限制，非 3b-1 回归；见 `docs/requirements/需求规格说明.md` §10-1。
 9. **卷轴居中标题不可查**：木匠蓝图标题（`Coop`/`Barn`）、订单板 `ChooseOne` 横幅等走 `drawStringWithScrollCenteredAt`，被 `drawBGScroll != -1` 闸门跳过；见 §10-2。
@@ -137,7 +145,7 @@
 > 协作方式：2026-11-23 起建议用**开发模式**（主控 Agent + 阶段 SubAgent）推进，见 `docs/ai/DEV_MODE.md`、`docs/ai/MAIN_AGENT_PROMPT.md`、`docs/ai/SUBAGENT_PROMPTS.md`。代码阶段严格串行，只有只读研究/评审可并行。
 
 1. **【已完成】** 本轮已提交：`e818b9f`（代码）+ `b2fae14`（文档）；`git status` 干净。
-2. **阶段 3b-3**：`ShippingMenu`（发货箱日终结算，物品名+数量+金额）与 `ItemListMenu`（丢物列表）；随后 3b-4 `ShopMenu`（tooltip 路径，风险最高）。3c：`JunimoNote` / 精通追踪。
+2. **阶段 3b-4**：`ShopMenu`——物品名/价格在像素字体正文，但描述/售价在 `IClickableMenu.drawHoverText`/`drawToolTip`，且背包格 tooltip 同屏；需先评估 tooltip 路径（可能超出「白名单一行」范式），风险最高。随后 3c：`JunimoNote` / 精通追踪。
 3. **需求池（`docs/requirements/需求规格说明.md` §10）**：连字符复合词分词（中）、卷轴居中标题可查词（中，影响木匠标题/订单板横幅）、同形多义词义项选择（低，`Fall`/`saw`）。
 4. **阶段 4**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需要世界→屏幕坐标换算。
 5. **阶段 5**：扩展面星标收藏/点击吞掉（谨慎，避免与菜单交互冲突）。
