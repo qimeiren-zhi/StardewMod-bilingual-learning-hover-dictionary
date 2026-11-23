@@ -1,9 +1,9 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-23（晚）。基线：`master` @ `b53598d`（代码内容等同 `0472442`，其后提交均为文档/chore），版本 `0.5.0`。
-> **本轮改动尚未提交**（12 改 + 3 新增，见下表）；`dist/` 未重建。
+> 更新时间：2026-11-23（晚）。基线：`master` @ `b2fae14`（本轮代码提交 `e818b9f` + 文档提交 `b2fae14`），版本 `0.5.0`。
+> `dist/` 未重建；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
-> 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`。
+> 本次会话的完整调试过程与证据见 `docs/ai/HANDOVER_2026-11-23.md`；协作模式见 `docs/ai/DEV_MODE.md`。
 
 ## 当前目标
 
@@ -108,7 +108,9 @@
 
 ## 下一步 TODO
 
-1. **提交本轮改动**（建议 `feat: 信件/任务日志悬停查词 + 文本捕获基础设施`），确认 `git status` 无 bin/obj/dist。
+> 协作方式：2026-11-23 起建议用**开发模式**（主控 Agent + 阶段 SubAgent）推进，见 `docs/ai/DEV_MODE.md`、`docs/ai/MAIN_AGENT_PROMPT.md`、`docs/ai/SUBAGENT_PROMPTS.md`。代码阶段严格串行，只有只读研究/评审可并行。
+
+1. **【已完成】** 本轮已提交：`e818b9f`（代码）+ `b2fae14`（文档）；`git status` 干净。
 2. **阶段 3**：`SpecialOrdersBoard` → 商店/木匠/日历/Billboard/发货箱/ItemList → `JunimoNote`；复用 `TextCapture` + 白名单，按面验收。
 3. **阶段 4**：世界层（`NPC.drawAboveAlwaysFrontLayer`、`*.drawAboveAlwaysFrontLayer`），需要世界→屏幕坐标换算。
 4. **阶段 5**：扩展面星标收藏/点击吞掉（谨慎，避免与菜单交互冲突）。

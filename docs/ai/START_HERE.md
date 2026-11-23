@@ -32,6 +32,10 @@
 | `docs/ai/DECISIONS.md` | 架构决策及原因 |
 | `docs/ai/CURRENT_TASK.md` | 当前任务卡 |
 | `docs/ai/HANDOVER_2026-11-23.md` | 2026-11-23 会话归档（扩展文本面：顺序核查、对齐调试、F10 用意、遗留） |
+| `docs/ai/DEV_MODE.md` | 开发模式：主控 + 阶段 SubAgent 的角色、串并行、契约、验收 |
+| `docs/ai/MAIN_AGENT_PROMPT.md` | 主控 Agent 的可粘贴 Prompt |
+| `docs/ai/SUBAGENT_PROMPTS.md` | 执行/评审/研究/发布 SubAgent 模板 + Packet 与报告 schema |
+| `docs/ai/stages/` | 每阶段记录（`stage-<id>.md`）与模板 |
 | `docs/requirements/` | 需求规格说明、资源需求（冻结版） |
 | `docs/planning/` | 开发计划与节点控制（含 §9 版本记录） |
 | `docs/specs/` | 词典数据格式（离线构建 ↔ 运行时数据契约） |

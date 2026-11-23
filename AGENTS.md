@@ -35,7 +35,7 @@ D:\Project\星露谷双语mod\
 │  ├─ specs\                      # 词典数据格式（离线构建↔运行时数据契约）
 │  ├─ guides\                     # 开发环境与构建说明
 │  ├─ release\                    # Nexus 发布文案
-│  └─ ai\                         # 本交接包
+│  └─ ai\                         # 交接包 + 开发模式（DEV_MODE / MAIN_AGENT_PROMPT / SUBAGENT_PROMPTS / stages）
 ├─ assets\art\                    # 原始气泡设计稿（二进制）
 ├─ references\decompiled\         # 游戏反编译参考（gitignored，只读参考）
 ├─ dist\                          # 发布包（gitignore）
@@ -143,5 +143,5 @@ C:\Users\zhiqi\dotnet\dotnet.exe build "D:\Project\星露谷双语mod\src\Biling
 9. **不要**给气泡命中只认词矩形（必须含气泡+桥接，否则鼠标进不去气泡）。
 10. **不要**给自定义菜单忘画光标（`drawMouse`）或忘 override `isWithinBounds`（否则气泡点不到）。
 11. 修改游戏内部字段/方法前，**先用 Mono.Cecil 核对**（`smapi-internal\Mono.Cecil.dll`），不要凭空猜签名。
-12. 源码与文档冲突时**以源码为准**；本文件记录的是当前 `b53598d` / v0.5.0 基线（代码内容等同 `0472442`，其后提交均为文档）。
+12. 源码与文档冲突时**以源码为准**；本文件记录的是 2026-11-23「扩展文本面」提交之后的 / v0.5.0 基线（`git log` 最新提交为准）。
 13. **不要**用 PowerShell 的 `Get-Content`/`Set-Content` 批量改源码（PS 5.1 按 ANSI 解码 UTF-8，会损坏中文与字符串字面量）；一律用编辑工具 `edit`/`write`。
