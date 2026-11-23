@@ -11,7 +11,7 @@ namespace BilingualLearning;
 
 /// <summary>
 /// 把查词扩展到非对话框的菜单文本面。
-/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表；阶段3b-4：商店正文（物品名/价格/以物易物/缺货提示，tooltip 不接管，见 DECISIONS 19）；阶段5b：星标收藏（复用对话路径的 Vocabulary 与气泡布局，见 DECISIONS 20）。
+/// 阶段0：信件 / 秘密纸条 / 日志残页；阶段2：任务日志；阶段3a：特殊订单板；阶段3b-1：木匠/建造菜单；阶段3b-2：小镇任务板/日历（Billboard）；阶段3b-3：发货箱日终结算 / 丢物列表；阶段3b-4：商店正文（物品名/价格/以物易物/缺货提示，tooltip 不接管，见 DECISIONS 19）；阶段5b：星标收藏（复用对话路径的 Vocabulary 与气泡布局，见 DECISIONS 20）；阶段3c：社区中心收集包（JunimoNoteMenu）与精通追踪（MasteryTrackerMenu）正文（卷轴奖励名/精通条不接管）。
 /// 悬停查词 + 星标收藏；命中范围裁剪到当前菜单矩形内（滚动列表中不命中被裁掉的文字）。
 /// </summary>
 public class ExtendedTextOverlay
@@ -26,7 +26,9 @@ public class ExtendedTextOverlay
         typeof(Billboard),
         typeof(ShippingMenu),
         typeof(ItemListMenu),
-        typeof(ShopMenu)
+        typeof(ShopMenu),
+        typeof(JunimoNoteMenu),
+        typeof(MasteryTrackerMenu)
     };
 
     /// <summary>白名单的只读视图，供 ModEntry 注册点击吞掉补丁（阶段 5a）。</summary>
