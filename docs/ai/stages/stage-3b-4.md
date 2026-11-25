@@ -164,7 +164,7 @@ EVIDENCE:
 - 越界检查：`git diff --stat master...stage/3b-4-shop` = 源码 2 文件（`ExtendedTextOverlay.cs` +36/−?、`ModEntry.cs` +46）+ 文档（DECISIONS #19、stage 文档、3 份评审、需求 §10-4）；无 bin/obj/dist、无 manifest/csproj/版本号、无 `references/`。
 - 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，`bin\Debug` 与 `Mods\BilingualLearning` DLL SHA256 一致。
 - 用户实机：**通过**。3 轮反馈全部修复并复测：① 商店 F1 卡片错成店长问候语 → 修复（忽略非 Item tooltip）；② Joja 气泡盖光标 → `DrawCursor` 忽略透明度；③ 气泡点击穿透误购（左键+右键）→ `ShopMenu` 的 `receiveLeftClick`/`receiveRightClick` prefix 吞掉。
-- 合并提交：`8fda139`（--no-ff，父 `212f917`）。
+- 合并提交：`2526515`（--no-ff，父 `e565b28`）。
 - 后续动作：**3b 全部收官**。下一步 3c（`JunimoNote` / 精通追踪）→ 4 世界层 → 5 交互统一（含其它扩展面的点击吞掉/星标）。
 
 ## 5. 经验沉淀（可选）

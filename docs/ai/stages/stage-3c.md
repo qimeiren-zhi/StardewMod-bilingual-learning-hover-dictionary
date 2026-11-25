@@ -121,8 +121,8 @@ EVIDENCE:
 - 越界检查：`git diff --stat master...stage/3c-junimo-mastery` = `ExtendedTextOverlay.cs`（+4/−2）+ `ModEntry.cs`（+6）+ 阶段文档；无版本号/dist/bin/obj/references。
 - 构建：`-p:EnableModDeploy=false` 与带部署构建均 0 error（部署时游戏运行被锁，关闭后已重部署，DLL 与 bin 一致）。
 - 用户实机：**JunimoNote 通过**（可读英文后区域名/包名/正文正常；点词走原生、星标正常）。**MasteryTrackerMenu 未实机**（存档未达条件）——代码已接入，标记「发布前必补测」。
-- 修复轮：用户要求「未读 Junimo 文不出气泡」→ `AfterSpriteTextDrawString` 对 `junimoText=true` 直接跳过捕获（`7582b3d`）。
-- 合并提交：`fbf1108`（--no-ff，父 `7582b3d`）。
+- 修复轮：用户要求「未读 Junimo 文不出气泡」→ `AfterSpriteTextDrawString` 对 `junimoText=true` 直接跳过捕获（`2a7754d`）。
+- 合并提交：`1470476`（--no-ff，父 `2a7754d`）。
 - 后续动作：**阶段 3 全部完成**。发布前补测 Mastery；之后阶段 4 世界层 / 发布准备。
 
 ## 5. 经验沉淀（可选）

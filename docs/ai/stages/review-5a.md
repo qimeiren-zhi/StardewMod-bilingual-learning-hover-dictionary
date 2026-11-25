@@ -13,7 +13,7 @@ NON_BLOCKING:
 5. 本次仅编译未部署，12 个 patch 的实际注册数以静态分析为准，待用户 5 条实机用例兜底。
 
 EVIDENCE:
-- `git diff --stat master...HEAD` 仅 3 文件：ModEntry.cs(+54/-17)、ExtendedTextOverlay.cs(+3)、stage-5a.md；与 commit ec493a9 相比 stage 文档只改 §2。
+- `git diff --stat master...HEAD` 仅 3 文件：ModEntry.cs(+54/-17)、ExtendedTextOverlay.cs(+3)、stage-5a.md；与 commit 9c73056 相比 stage 文档只改 §2。
 - 白名单 8 类型及顺序未变（ExtendedTextOverlay.cs:20-30）；仅新增只读视图 :33。
 - ShopMenu 旧专用行为保留：同一 prefix 实现改名后仍同时挂左/右键（ModEntry.cs:125-128, 485-487）；`DialogueBox` 的 `BeforeClick`/hover hook 未动（:71-88, :479）。
 - `AccessTools.Method` 后判 `clickMethod.DeclaringType != menuType` 跳过继承方法（:113-123），不会重复 patch 基类；右键缺失静默跳过合理（基类 `receiveRightClick` 为空）。

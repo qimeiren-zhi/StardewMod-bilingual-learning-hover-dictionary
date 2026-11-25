@@ -125,7 +125,7 @@ EVIDENCE:
   1. 连字符复合词无法识别（如 `coop-dwelling`）——**既有分词限制，非本阶段回归**，已记入需求/已知问题；
   2. 蓝图描述上方的农场建筑标题（`Coop` / `Barn` 等）需要可查词——**新需求**，该标题走 `SpriteText.drawStringWithScrollCenteredAt`，被现有 `drawBGScroll != -1` 闸门跳过，需专门阶段处理；
   3. 询问「鼠标停在描述词上时如何切换蓝图」——已由只读研究核实（见 `docs/ai/HANDOFF.md` 3b-1 段）。
-- 合并提交：`5987765`（--no-ff，父 `a6a07a8`）。
+- 合并提交：`fb67379`（--no-ff，父 `77ec871`）。
 - 后续动作：阶段 3b-2（小镇任务板 `Billboard`）；「scroll 居中标题可查词」单列为后续需求（影响木匠标题、订单板 ChooseOne 横幅等）。
 
 ## 5. 经验沉淀（可选）

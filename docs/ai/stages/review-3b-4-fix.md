@@ -12,9 +12,9 @@ NON_BLOCKING:
 5. `cursorDiagLogged` 只在 `Clear()`（失泡/切菜单/禁用）重置（ExtendedTextOverlay.cs:457），重置时机正确；F10 关闭时短路，零额外开销。
 
 EVIDENCE:
-- `git show 5933da5`：src 仅 ModEntry.cs +18/-4、ExtendedTextOverlay.cs +19/-1；`git diff --name-status 5933da5~1..5933da5` = 3 文件（2 src + stage 文档）。
+- `git show 868e299`：src 仅 ModEntry.cs +18/-4、ExtendedTextOverlay.cs +19/-1；`git diff --name-status 868e299~1..868e299` = 3 文件（2 src + stage 文档）。
 - 修复 A（ModEntry.cs:317-335）：`Length<=9` early-return 原语义等价；仅 `is ShopMenu && __args[9] is not Item` 跳过；body/title/args 三行赋值未变 → 非商店菜单零变化；`KnowledgeCardMenu` 重放仍拿完整 args 克隆。空引用安全（`is not Item` 判 null）、数组越界由长度闸门保证。
 - Cecil：ShopMenu.draw IL_0aa7/0xaed 两次 `drawToolTip`（params[3]=Item；其 IL_0167 再调 drawHoverText string 重载）→ 商品/背包 tooltip 的 args[9]=Item 仍缓存；IL_0c80 问候语 `drawHoverText` 的 hoveredItem 为 IL_0c39 `ldnull` → 被忽略。参数名确认 index9=hoveredItem:Item、index1=text、index6=boldTitleText。
 - 修复 B（ExtendedTextOverlay.cs:216-232）：三参 `drawMouse(b,bool,int)` 与游戏签名一致（IClickableMenu.cs:164）；日志三重闸门（DebugRects/!cursorDiagLogged/monitor），关闭时无插值开销；未动气泡布局、命中、桥接、DrawBubble。
-- 无回退/越界：`git diff ccec170..5933da5 -- TooltipTextCapture.cs TextCapture.cs WordOverlay.cs BubbleRenderer.cs KnowledgeCardMenu.cs SpriteTextWordLayout.cs manifest.json csproj DECISIONS.md BUG_PATTERNS.md` 为空；首轮 AllowedMenus 8 类型与类注释保留（ExtendedTextOverlay.cs:20-30）；对话光标路径（ModEntry.cs:444-449）未变；无版本号/dist/bin/obj/references 改动。
-- 构建：`dotnet build -c Debug -p:EnableModDeploy=false` → 0 error（1×既有 CS9057 警告）；工作树 clean @5933da5。
+- 无回退/越界：`git diff 1ca7e6b..868e299 -- TooltipTextCapture.cs TextCapture.cs WordOverlay.cs BubbleRenderer.cs KnowledgeCardMenu.cs SpriteTextWordLayout.cs manifest.json csproj DECISIONS.md BUG_PATTERNS.md` 为空；首轮 AllowedMenus 8 类型与类注释保留（ExtendedTextOverlay.cs:20-30）；对话光标路径（ModEntry.cs:444-449）未变；无版本号/dist/bin/obj/references 改动。
+- 构建：`dotnet build -c Debug -p:EnableModDeploy=false` → 0 error（1×既有 CS9057 警告）；工作树 clean @868e299。

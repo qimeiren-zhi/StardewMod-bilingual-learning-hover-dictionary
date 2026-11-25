@@ -21,4 +21,4 @@ EVIDENCE:
 - 构建：`dotnet build ... -c Debug -p:EnableModDeploy=false` → 0 错误，1 警告 CS9057（已知无害）；bin\Debug\BilingualLearning.dll 与 Mods\BilingualLearning\BilingualLearning.dll SHA256 均为 A1DF50D7…392E80E（内容一致，部署版与本次构建同源）。
 - ExtendLookup=Off 零变化：IsEnabled/ShouldCapture/RebuildWordRects/BuildSpriteFontHits 未在 diff；ShouldCapture(ModEntry.cs:300) 仍仅在白名单菜单捕获，F1 卡片/Capturing 旁路不变。
 - 前 5 菜单与对话：仅扩白名单集合，逻辑分支未改；光标重绘仅 HasBubble 时执行（ModEntry.cs:446），不干扰 OK 按钮等原生交互。
-- 评审前工作树 clean（HEAD 3c0d349）；评审后仅新增本文件（未提交），未改动任何仓库源码。
+- 评审前工作树 clean（HEAD 1761ec5）；评审后仅新增本文件（未提交），未改动任何仓库源码。

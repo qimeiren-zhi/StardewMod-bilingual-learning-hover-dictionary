@@ -1,6 +1,6 @@
 # 当前交接（Bilingual Learning / 星露谷双语学习 Mod）
 
-> 更新时间：2026-11-24（凌晨）。基线：`master` @ `ca3de3a`（3a、3b-1~3b-4、5a、5b、3c 全部合并；代码版本 0.5.0）；**发布分支 `release/0.6.0` 已构建但未合并、未实机确认**。
+> 更新时间：2026-11-24（凌晨）。基线：`master` @ `1a50be1`（3a、3b-1~3b-4、5a、5b、3c 全部合并；代码版本 0.5.0）；**发布分支 `release/0.6.0` 已构建但未合并、未实机确认**。
 > `dist/` 已重建 `BilingualLearning 0.6.0.zip`（与 bin 同哈希）；工作区干净。
 > 新会话顺序：`AGENTS.md` → 本文件 → `docs/ai/BUG_PATTERNS.md` → `docs/ai/DECISIONS.md` → `docs/ai/CURRENT_TASK.md`。
 > 本次会话完整记录见 `docs/ai/HANDOVER_2026-11-24.md`；协作模式见 `docs/ai/DEV_MODE.md`。
@@ -14,10 +14,10 @@
 
 ## 阶段 R1：0.6.0 发布准备（2026-11-24，分支未合并）
 
-- 分支 `release/0.6.0`（3 个提交：`8819dd9` Packet、`dc6426e` 版本+文案、`7d24692` 报告）；`master` 合并提交待用户确认后做。
+- 分支 `release/0.6.0`（3 个提交：`989322e` Packet、`ce30326` 版本+文案、`2cea072` 报告）；`master` 合并提交待用户确认后做。
 - 版本：`manifest.json` / `csproj` / `CHANGELOG` 顶部均 0.6.0；CHANGELOG `[0.6.0] - 2026-11-24`；README/Nexus 文案同步（9 菜单 + 星标 + 点击安全）。
 - 包：`dist/BilingualLearning 0.6.0.zip`（SHA256 `D2134BA5…DBF00A`，与 `bin\Debug` 同哈希）；`Mods\BilingualLearning` 已部署 0.6.0。
-- **Mastery 未实装**：白名单已移除（`388c170`），发布文档无「Mastery/精通」字样；代码与研究结论保留，待补测后恢复。
+- **Mastery 未实装**：白名单已移除（`bdaec58`），发布文档无「Mastery/精通」字样；代码与研究结论保留，待补测后恢复。
 - **发布前必做**：用户实机 4 条（SMAPI 显示 0.6.0 / 扩展面查词+星标 / 商店点击与 F9 / Off 行为）→ 通过后合并 `release/0.6.0`（`--no-ff`），必要时打 `v0.6.0` tag。
 
 
@@ -25,23 +25,23 @@
 
 - 范围：`JunimoNoteMenu` 加入 `AllowedMenus`；点击吞掉/星标由 `SupportedMenus` 自动覆盖。
 - 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-3c.md`）；用户实机：**JunimoNote 通过**（可读英文后区域名/包名/正文正常）。
-- `MasteryTrackerMenu` 曾接入但**未实机**（存档条件不足），按用户要求**已从白名单移除、不随 0.6.0 发布**（`388c170`）；代码与研究结论保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
-- 修复轮：用户要求「未读 Junimo 文（junimo 字体）不出气泡」→ `AfterSpriteTextDrawString` 检测 `junimoText` 直接跳过捕获（`7582b3d`）。
-- 合并：`fbf1108`（+`ca3de3a` 移除 Mastery）；阶段记录 `docs/ai/stages/stage-3c.md`。
+- `MasteryTrackerMenu` 曾接入但**未实机**（存档条件不足），按用户要求**已从白名单移除、不随 0.6.0 发布**（`bdaec58`）；代码与研究结论保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
+- 修复轮：用户要求「未读 Junimo 文（junimo 字体）不出气泡」→ `AfterSpriteTextDrawString` 检测 `junimoText` 直接跳过捕获（`2a7754d`）。
+- 合并：`1470476`（+`1a50be1` 移除 Mastery）；阶段记录 `docs/ai/stages/stage-3c.md`。
 
 
 ## 阶段 5b（2026-11-24 凌晨，已合并）
 
 - 范围：扩展面气泡显示星标（`showStar:true`），左键点星 toggle `Vocabulary`（立即写盘）；左键 prefix 先 `TryToggleStar` 再吞，右键只吞不 toggle；复用对话路径的 `Vocabulary`/`BubbleRenderer`（DECISIONS #20）。
 - 修复轮：点击吞掉区域从「气泡∪词∪桥接」**收窄为仅气泡矩形**——点词/桥接走原生（进任务面板/翻页/接单/购买），点气泡空白仍被吞（`BUG_PATTERNS` #26）。
-- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5b.md`）；用户**通过**；合并 `d501217`。
+- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5b.md`）；用户**通过**；合并 `2532377`。
 - 阶段记录：`docs/ai/stages/stage-5b.md`。
 
 
 ## 阶段 5a（2026-11-24 凌晨，已合并）
 
 - 范围：把 3b-4 的 `ShopMenu` 专用「气泡区域吞点击」泛化到 8 个白名单菜单：遍历 `ExtendedTextOverlay.SupportedMenus`，只 patch 自身 override（8 左键 + 4 右键：LetterViewerMenu/SpecialOrdersBoard/Billboard/ShopMenu），统一 prefix + `IsPointerOnBubble`；加 `trackedMenu` 守卫。
-- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5a.md`）；用户**通过**；合并 `63003be`。
+- 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-5a.md`）；用户**通过**；合并 `cea1908`。
 - 记录：`BUG_PATTERNS.md` #25（`AccessTools.Method` 沿继承链命中基类 → 重复 patch）；阶段记录 `docs/ai/stages/stage-5a.md`。
 - 已知（5b 后已修正）：吞点击现在只覆盖气泡矩形；中键/滚轮未覆盖。
 
@@ -50,7 +50,7 @@
 
 - 范围：`ShopMenu` 加入 `AllowedMenus`（一行）；正文像素字体（物品名/价格/以物易物/缺货提示）复用现有管线；**tooltip 不接管**（DECISIONS #19：物品描述走 F1 知识卡片）。
 - 3 轮修复（均由用户实机发现）：① F1 卡片错成店长问候语 → `AfterDrawHoverText` 忽略非 `Item` tooltip；② Joja 气泡盖光标 → `DrawCursor` 用 `drawMouse(b, ignore_transparency: true)`；③ 气泡点击穿透误购 → `ShopMenu.receiveLeftClick`/`receiveRightClick` prefix + `IsPointerOnBubble`。
-- 结果：构建 0 error（含部署）；三份评审 PASS（`review-3b-4*.md`）；用户**通过**；合并 `8fda139`。
+- 结果：构建 0 error（含部署）；三份评审 PASS（`review-3b-4*.md`）；用户**通过**；合并 `2526515`。
 - 记录：`BUG_PATTERNS.md` #23（F1 缓存被问候语覆盖）、#24（气泡点击穿透）；需求 §10-4（商店 tooltip 随光标抢焦点，可接受）。
 
 
@@ -58,7 +58,7 @@
 
 - 范围：`ShippingMenu`（发货箱日终结算）与 `ItemListMenu`（丢物列表）加入 `AllowedMenus`（两行）；正文全为像素字体 `SpriteText.drawString`，复用现有布局/裁剪/命中，**无新增 hook**。
 - 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-3.md`）；用户**全部通过**。
-- 合并：`c5901a8`；阶段记录 `docs/ai/stages/stage-3b-3.md`。
+- 合并：`c18bf48`；阶段记录 `docs/ai/stages/stage-3b-3.md`。
 - 测试备注：`debug eventScript .../showItemsLost/end` 只回「no output」、未直接弹菜单；用户改用人工触发事件验证成功。后续复测优先 `debug ebi PlayerKilled`（扣钱掉物，需测试存档）。
 
 
@@ -66,18 +66,18 @@
 
 - 范围：`Billboard`（任务板 + 日历共用类型）加入 `ExtendedTextOverlay.AllowedMenus`（一行）；任务描述（dialogueFont、`parseText(...,640)` 多行）复用现有 SpriteFont 管线，**无新增 hook**。
 - 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-2.md`）；用户实机通过（公告板描述可查、长描述遮挡可接受、日历季节名可查、Off 无行为）。
-- 合并：`d6b5ac5`；阶段记录 `docs/ai/stages/stage-3b-2.md`。
+- 合并：`c3883bc`；阶段记录 `docs/ai/stages/stage-3b-2.md`。
 - 用户反馈（与本次无关、已记录）：日历悬停 `Fall` 显示「落下，爱上」而非「秋天」→ 同形多义词义项问题，见 `BUG_PATTERNS.md` #22 与需求 §10-3。
 
 ## 阶段 3b-1（2026-11-23 深夜，已合并）
 
 - 范围：`CarpenterMenu` 加入 `ExtendedTextOverlay.AllowedMenus`（一行）；蓝图描述（dialogueFont、`parseText` 多行）、建造费、配料名/数量复用现有 SpriteFont 管线，**无新增 hook**。
 - 结果：构建 0 error（含部署，DLL 与 bin 一致）；评审 PASS（`docs/ai/stages/review-3b-1.md`）；用户实机通过。
-- 合并：`5987765`；阶段记录 `docs/ai/stages/stage-3b-1.md`。
+- 合并：`fb67379`；阶段记录 `docs/ai/stages/stage-3b-1.md`。
 - 用户反馈（已转需求，见 `docs/requirements/需求规格说明.md` §10）：① 连字符复合词（`coop-dwelling`）不命中，属既有分词限制；② 蓝图建筑标题（`Coop`/`Barn`）需可查词，走 scroll 居中文本，需专门布局；③ 悬停描述时切换蓝图：**只有手柄 LT/RT**（`receiveGamePadButton` IL_0010/IL_0018），键盘/滚轮无效，鼠标需点左下角箭头（`backButton`/`forwardButton`）；放置模式 `onFarm` 下全部短路。
 
 
-## 本轮成果（相对 `b53598d`）
+## 本轮成果（相对 `560d8ad`）
 
 | 类别 | 内容 |
 |---|---|
@@ -91,7 +91,7 @@
 
 - 范围：`SpecialOrdersBoard` 加入 `ExtendedTextOverlay.AllowedMenus`（一行）；订单正文为 `Utility.drawTextWithShadow` 的 9 参 `DrawString`，多行 `\n`/缩字 `scale` 复用现有 SpriteFont 管线，**无新增 hook**。
 - 结果：构建 0 error（含部署）；评审 PASS（`docs/ai/stages/review-3a.md`）；用户实机通过（订单板可查词、多行/缩字贴合、切换订单不残留、Off 全局不查词为设计行为）。
-- 合并：`ceb0a46`；阶段记录 `docs/ai/stages/stage-3a.md`。
+- 合并：`93b0790`；阶段记录 `docs/ai/stages/stage-3a.md`。
 - 遗留（非阻断）：GMCM `Extended lookup` 描述与 `ModEntry.cs:308` 注释仍只写 letters/quest log，未含订单板，**3b 时同步**。
 
 ## 调试键 `F10` 的用意（重要）
@@ -107,7 +107,7 @@
 
 ## 非目标
 
-- **不整包复用**其他 Agent 的「阶段2」（`backup/other-agent-807c988`）；只可参考其布局算法/分层思路。
+- **不整包复用**其他 Agent 的「阶段2」（`backup/other-agent-7e2b7ee`）；只可参考其布局算法/分层思路。
 - **不按绘制 API 分阶段**：同一菜单常混用 `SpriteText` 与 `SpriteFont`，按 API 切会重复实现（见计划 §8.2）。
 - 扩展文本面**暂不接管点击/星标**：星标收藏留到阶段 5 统一做。
 - 不在本轮处理「问题对话框选项文字查词」（仍待定）。
@@ -162,7 +162,7 @@
 3. **`DialogueBox.draw` 抬 LayerDepth 修光标（无效）**：用 `RenderedActiveMenu` + `drawMouse`。
 4. **中文 GMCM 标签（已改英文）**。
 5. **只 hook 1 个 `DrawString` 重载（已补全 4 个）**。
-6. **备份分支整包（`807c988`，已回滚）**：不要直接复用。
+6. **备份分支整包（`7e2b7ee`，已回滚）**：不要直接复用。
 7. **PowerShell `Get-Content/Set-Content` 改源码**：会按 ANSI 解码损坏 UTF-8（本次已踩坑并修复），只用编辑工具。
 
 ## 已知问题/限制
@@ -180,7 +180,7 @@
 11. **同形多义词显示错误义项**：日历 `Fall` 显示「落下，爱上」而非「秋天」（`saw` 同类）。既有词典按拼写精确匹配、无 POS/语境消歧；见 `BUG_PATTERNS.md` #22、需求 §10-3。
 12. **扩展面点击吞掉已覆盖 8 个白名单菜单**（5a + 5b 收窄）：只有**气泡矩形**（含星标）吞左/右键；点词/桥接走原生（任务面板/翻页/接单/购买）。中键/滚轮、`GameMenu` 各页与世界层仍未覆盖。
 13. **白名单菜单内的 tooltip 文本会被通用 `DrawString` 捕获**（商店/木匠/任务板/任务日志同源）：正常位置一般不触发，靠近屏幕边缘 tooltip 翻转到光标处时可能误出气泡；属架构层遗留，后续统一处理（可在 `drawHoverText` 处抑制捕获）。
-14. **`MasteryTrackerMenu` 未实装**（3c）：曾接入白名单但存档条件不足、未实机，按用户要求已移除（`388c170`），不随 0.6.0 发布；代码/研究保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
+14. **`MasteryTrackerMenu` 未实装**（3c）：曾接入白名单但存档条件不足、未实机，按用户要求已移除（`bdaec58`），不随 0.6.0 发布；代码/研究保留，补测后单独恢复（步骤见 `stage-3c.md` §5）。
 15. **未读 Junimo 文不参与查词**（3c 用户要求）：`junimoText=true` 的绘制直接跳过捕获，避免乱码/错位气泡。
 
 ## 下一步 TODO
