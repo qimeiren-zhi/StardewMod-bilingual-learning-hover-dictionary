@@ -123,7 +123,7 @@ EVIDENCE:
 - 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error；主控已部署，`bin\Debug` 与 `Mods\BilingualLearning` DLL SHA256 一致。
 - 用户实机：**通过**（公告板任务描述可查词、长描述遮挡可接受、日历季节名可查、Off 无行为）。
 - 用户反馈（与本次无关、已记录）：日历里悬停 `Fall` 显示「落下，爱上」而非「秋天」——同形多义词义项选择问题，见 `docs/ai/BUG_PATTERNS.md` #22 与 `docs/requirements/需求规格说明.md` §10-3。
-- 合并提交：`c3883bc`（--no-ff，父 `8684d20`）。
+- 合并提交：`73db53f`（--no-ff，父 `ee36afd`）。
 - 后续动作：阶段 3b-3（`ShippingMenu` + `ItemListMenu`）；随后 3b-4 `ShopMenu`（tooltip 路径）。
 
 ## 5. 经验沉淀（可选）

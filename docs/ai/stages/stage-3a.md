@@ -82,7 +82,7 @@ STOP_CONDITIONS（必须 BLOCKED，不要猜）:
 
 ```text
 STATUS: DONE_WITH_RISK
-STAGE: 3a   BRANCH: stage/3a-orders-board   COMMITS: 本阶段执行提交 1d117fa（另有 5b53215 Packet、37f052a 评审）
+STAGE: 3a   BRANCH: stage/3a-orders-board   COMMITS: 本阶段执行提交 c55ae3c（另有 017daae Packet、34dbb94 评审）
 SUMMARY: 白名单新增 SpecialOrdersBoard 一行（含类注释同步）；捕获闸门与命中逻辑零改动，构建 0 error。主控已用默认构建（带部署）更新 Mods\BilingualLearning，部署 DLL 与 bin 内容一致，可直接实机验收。无新增决策/新坑。
 FILES:
 - src/BilingualLearning/ExtendedTextOverlay.cs — AllowedMenus 增加 typeof(SpecialOrdersBoard)（1 行）+ 类注释补「阶段3a」（0 行为）
@@ -116,10 +116,10 @@ VERDICT: PASS
 BLOCKING: 无。
 NON_BLOCKING:
 1. 报告 VERIFY「部署目录 DLL 仍为 20:20 旧版本 → 确认未部署」与实测不符：Mods\BilingualLearning\BilingualLearning.dll mtime 22:17:58、SHA256 508CF55D…C9A3 与 bin 一致；RISKS「需先部署再测」已过期 → 本修订已更正（部署状态）。
-2. 报告 COMMITS 写「本阶段单提交」，实际 master..HEAD 有 5b53215 Packet + 1d117fa feat → 本修订已改写为「本阶段执行提交 1d117fa（另有 Packet/评审）」。
+2. 报告 COMMITS 写「本阶段单提交」，实际 master..HEAD 有 017daae Packet + c55ae3c feat → 本修订已改写为「本阶段执行提交 c55ae3c（另有 Packet/评审）」。
 3. 陈旧文案（OUT_OF_SCOPE，未要求本阶段改）：ModEntry.cs:308 注释仍写「阶段0/2：信件、任务日志」；GMCM「Extended lookup」描述仍为 letters/quest log，未含订单板。建议后续阶段一并同步。
 4. 顶部 ChooseOne 横幅（SpriteText）不接管、超出菜单矩形的文本不可悬停，均为 Packet 已声明预期，无新增风险。
-EVIDENCE: 详见 docs/ai/stages/review-3a.md（评审提交 37f052a）；构建 0 error、diff 仅 2 处、闸门零改动。
+EVIDENCE: 详见 docs/ai/stages/review-3a.md（评审提交 34dbb94）；构建 0 error、diff 仅 2 处、闸门零改动。
 ```
 
 ## 4. 验收结论（主控填写）
@@ -127,7 +127,7 @@ EVIDENCE: 详见 docs/ai/stages/review-3a.md（评审提交 37f052a）；构建 
 - 越界检查：`git diff --stat master...stage/3a-orders-board` = `review-3a.md`(新增 22) + `stage-3a.md`(新增 137) + `ExtendedTextOverlay.cs`(5+/2-)；无 bin/obj/dist、无 manifest/csproj/版本号。
 - 构建：`dotnet build -c Debug`（含部署）与 `-p:EnableModDeploy=false` 均 0 error（仅既有 CS9057 警告）；主控已部署到 `Mods\BilingualLearning`。
 - 用户实机：**通过**。订单板描述可悬停查词；多行/缩字对齐、切换订单不残留、Off 时全局不查词均符合预期（用户确认 `Extended lookup=Off` 关闭信件/任务日志为设计行为）。
-- 合并提交：`93b0790`（--no-ff，父 `f85eb41`）。
+- 合并提交：`ebae93f`（--no-ff，父 `54952d4`）。
 - 后续动作：进入阶段 3b（商店/木匠/日历/Billboard/发货箱/ItemList）；顺手同步 GMCM 文案与 `ModEntry.cs:308` 注释（评审 NON_BLOCKING 3）。
 
 ## 5. 经验沉淀（可选）

@@ -11,7 +11,7 @@
   - 移除 `ModConfig.ExtendLookup` 与 GMCM 选项（`ModEntry.RegisterConfigMenu`）；
   - `TextCapture.Enabled` 改为「白名单菜单（或 F10 调试）」；`ExtendedTextOverlay.IsEnabled` 去掉配置判断；
   - 同步 README/CHANGELOG/Nexus、AGENTS、需求 §10-5；需实机回归对话/卡片/9 个扩展面。
-- **状态**：master `1a50be1`（功能全齐、版本号仍 0.5.0）；`release/0.6.0` `2cea072`（版本 0.6.0 + 文案 + 报告）；游戏 Mods 已部署 0.6.0；`dist` 有 0.6.0 zip（旧 0.5.0 仍留）。
+- **状态**：master `eca1969`（功能全齐、版本号仍 0.5.0）；`release/0.6.0` `835613f`（版本 0.6.0 + 文案 + 报告）；游戏 Mods 已部署 0.6.0；`dist` 有 0.6.0 zip（旧 0.5.0 仍留）。
 - **已知遗留（非阻塞）**：
   - `MasteryTrackerMenu` 未实装（未实机，白名单已移除，代码保留）；
   - 需求池 §10：连字符分词、卷轴居中标题、同形多义词、商店 tooltip 抢焦点；

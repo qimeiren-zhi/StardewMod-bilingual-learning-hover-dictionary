@@ -19,9 +19,9 @@
 
 ## 项目当前状态（已核实）
 
-- `master` @ `1a50be1`：阶段 3a/3b-1~3b-4/5a/5b/3c 全部合并；扩展查词覆盖 **9 个菜单**（信件/任务日志/订单板/木匠/任务板/日历/发货箱/丢物列表/商店/收集包），扩展面**星标 + 点击吞掉**已实机通过。
+- `master` @ `eca1969`：阶段 3a/3b-1~3b-4/5a/5b/3c 全部合并；扩展查词覆盖 **9 个菜单**（信件/任务日志/订单板/木匠/任务板/日历/发货箱/丢物列表/商店/收集包），扩展面**星标 + 点击吞掉**已实机通过。
 - `master` 版本号仍是 **0.5.0**（功能已全，版本号只在发布分支改）。
-- **发布分支 `release/0.6.0` @ `2cea072`**：版本 0.6.0 三处一致（manifest/csproj/CHANGELOG），README/Nexus 文案已更新，`dist/BilingualLearning 0.6.0.zip` 已生成并校验；**未合并 master，等待用户实机 4 条**。
+- **发布分支 `release/0.6.0` @ `835613f`**：版本 0.6.0 三处一致（manifest/csproj/CHANGELOG），README/Nexus 文案已更新，`dist/BilingualLearning 0.6.0.zip` 已生成并校验；**未合并 master，等待用户实机 4 条**。
 - 游戏 `Mods\BilingualLearning` 当前已部署 **0.6.0**（manifest 0.6.0），可直接让用户实机。
 - `MasteryTrackerMenu` **未实装**（未实机，白名单已移除，代码与研究保留）；CHANGELOG/README/Nexus 不得出现 Mastery/精通。
 

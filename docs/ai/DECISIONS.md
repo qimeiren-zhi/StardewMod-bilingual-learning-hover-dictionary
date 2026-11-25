@@ -116,7 +116,7 @@
 
 ## 决策 15：文本面扩展「按文本面切片」，不按绘制 API 分阶段
 
-- **背景**：原计划 §8.4 按「阶段2 SpriteText → 阶段3 SpriteFont → 打磨」推进，备份分支（`7e2b7ee`）据此重写并回滚。
+- **背景**：原计划 §8.4 按「阶段2 SpriteText → 阶段3 SpriteFont → 打磨」推进，备份分支（`d2d87fd`）据此重写并回滚。
 - **决策**：
   - 先建**统一每帧文本注册表**（`SpriteText.drawString` + 4 个 `SpriteBatch.DrawString` 重载），再按文本面逐个交付：信件 → 任务日志/订单板 → 菜单长尾 → 世界层 → 交互；
   - `WordOverlay` / `KnowledgeCardMenu` 保持原路径，只把词布局抽成共享纯函数；

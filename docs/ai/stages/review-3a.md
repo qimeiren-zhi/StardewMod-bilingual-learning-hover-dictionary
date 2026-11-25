@@ -1,13 +1,13 @@
 # 阶段 3a 评审（只读评审，未改仓库源码）
 
-评审对象：`master...stage/3a-orders-board`（1d117fa feat + 5b53215 docs packet）
+评审对象：`master...stage/3a-orders-board`（c55ae3c feat + 017daae docs packet）
 
 ```text
 VERDICT: PASS
 BLOCKING: 无。
 NON_BLOCKING:
 1. §2 REPORT VERIFY「游戏进程未运行；部署目录 DLL 仍为 20:20 旧版本 → 确认未部署」与实测不符：Mods\BilingualLearning\BilingualLearning.dll mtime 22:17:58，SHA256 508CF55D…C9A3 与新构建 bin 完全一致（即 3a 代码已在部署目录）；RISKS「需先部署再测」已过期。建议执行 Agent 更正报告（不阻断，游戏未运行故部署无副作用）。
-2. §2 COMMITS 写「本阶段单提交」，实际 master..HEAD 有 2 个提交（5b53215 docs Packet、1d117fa feat），与「1 个语义化提交」措辞有出入；建议改述。
+2. §2 COMMITS 写「本阶段单提交」，实际 master..HEAD 有 2 个提交（017daae docs Packet、c55ae3c feat），与「1 个语义化提交」措辞有出入；建议改述。
 3. 陈旧文案（OUT_OF_SCOPE，未要求本阶段改）：ModEntry.cs:308 注释仍写「阶段0/2：信件、任务日志」；GMCM「Extended lookup」描述仍为 letters/quest log，未含订单板。建议后续阶段一并同步。
 4. 顶部 ChooseOne 横幅（SpriteText）不接管、超出菜单矩形的文本不可悬停，均为 Packet 已声明预期，无新增风险。
 EVIDENCE:
